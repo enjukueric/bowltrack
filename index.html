@@ -1,0 +1,2690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bowl Tracker">
+<title>Bowl Tracker</title>
+<link rel="manifest" id="pwa-manifest">
+
+<style>
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0a0a0f;
+  --bg2:       #12121a;
+  --bg3:       #1a1a26;
+  --border:    #2a2a3a;
+  --neon:      #00e5ff;
+  --neon2:     #ff6b35;
+  --neon3:     #b44fff;
+  --text:      #e8e8f0;
+  --text2:     #9090a8;
+  --strike:    #ffd700;
+  --spare:     #00e5ff;
+  --open:      #e8e8f0;
+  --danger:    #ff4444;
+  --success:   #44ff88;
+  --radius:    12px;
+  --nav-h:     64px;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, select, textarea {
+  font: inherit;
+  color: inherit;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  width: 100%;
+  outline: none;
+  transition: border-color .2s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--neon); }
+
+label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4px; }
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+#content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--nav-h) + 8px);
+}
+
+/* ============================================================
+   BOTTOM NAV
+   ============================================================ */
+#bottom-nav {
+  height: var(--nav-h);
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: .65rem;
+  color: var(--text2);
+  transition: color .2s;
+  min-height: 44px;
+  padding: 8px 4px;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.nav-btn svg { width: 22px; height: 22px; flex-shrink: 0; }
+.nav-btn.active { color: var(--neon); }
+.nav-btn.active svg path, .nav-btn.active svg circle, .nav-btn.active svg rect,
+.nav-btn.active svg polyline, .nav-btn.active svg line { stroke: var(--neon); }
+
+/* ============================================================
+   SCREENS
+   ============================================================ */
+.screen { display: none; padding: 0; }
+.screen.active { display: block; }
+
+/* ============================================================
+   AUTH SCREEN
+   ============================================================ */
+#screen-auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 32px 24px;
+  gap: 24px;
+}
+
+.auth-logo {
+  text-align: center;
+  margin-bottom: 8px;
+}
+.auth-logo .ball {
+  width: 72px; height: 72px;
+  background: radial-gradient(circle at 35% 35%, #444, #111);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  box-shadow: 0 0 30px rgba(0,229,255,.3), inset 0 2px 6px rgba(255,255,255,.1);
+  position: relative;
+}
+.auth-logo .ball::after {
+  content:'';
+  position: absolute;
+  top: 20px; left: 16px;
+  width: 8px; height: 8px;
+  background: #222;
+  border-radius: 50%;
+  box-shadow: 10px 4px 0 #222, 20px -2px 0 #222;
+}
+.auth-logo h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: .05em; }
+.auth-logo h1 span { color: var(--neon); }
+.auth-logo p { color: var(--text2); font-size: .85rem; margin-top: 4px; }
+
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.auth-tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+.auth-tab {
+  flex: 1; padding: 10px;
+  border-radius: 8px;
+  font-size: .875rem;
+  font-weight: 600;
+  color: var(--text2);
+  background: var(--bg3);
+  transition: all .2s;
+}
+.auth-tab.active { background: var(--neon); color: #000; }
+
+.form-group { margin-bottom: 16px; }
+
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: var(--neon);
+  color: #000;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: opacity .2s, transform .1s;
+  margin-top: 8px;
+}
+.btn-primary:active { transform: scale(.98); opacity: .9; }
+.btn-primary:disabled { opacity: .5; }
+
+.btn-secondary {
+  padding: 12px 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: .9rem;
+  transition: border-color .2s;
+}
+.btn-secondary:hover { border-color: var(--neon); }
+
+.btn-danger {
+  padding: 10px 16px;
+  background: rgba(255,68,68,.15);
+  border: 1px solid rgba(255,68,68,.3);
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: .85rem;
+}
+
+.auth-error {
+  color: var(--danger);
+  font-size: .8rem;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 12px;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+}
+.page-header h2 { font-size: 1.15rem; font-weight: 700; }
+.page-header .subtitle { font-size: .75rem; color: var(--text2); margin-top: 1px; }
+
+/* ============================================================
+   HOME SCREEN
+   ============================================================ */
+.home-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 16px;
+}
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  text-align: center;
+}
+.stat-card .val {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--neon);
+  line-height: 1;
+}
+.stat-card .lbl { font-size: .7rem; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+
+.section-title {
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text2);
+  padding: 0 16px;
+  margin: 8px 0 4px;
+}
+
+.league-list { padding: 0 16px 8px; display: flex; flex-direction: column; gap: 10px; }
+
+.league-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color .2s;
+}
+.league-card:active { border-color: var(--neon); }
+.league-card .lc-info { flex: 1; min-width: 0; }
+.league-card .lc-name { font-weight: 600; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.league-card .lc-meta { font-size: .75rem; color: var(--text2); margin-top: 2px; }
+.league-card .lc-avg {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--neon);
+  flex-shrink: 0;
+  min-width: 48px;
+  text-align: right;
+}
+.league-card .lc-avg-lbl { font-size: .65rem; color: var(--text2); text-align: right; }
+
+.fab {
+  position: fixed;
+  bottom: calc(var(--nav-h) + 16px);
+  right: 16px;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--neon);
+  color: #000;
+  font-size: 1.5rem;
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0,229,255,.4);
+  z-index: 50;
+  transition: transform .2s;
+}
+.fab:active { transform: scale(.92); }
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+  transform: translateY(100%);
+  transition: transform .3s cubic-bezier(.32,1,.3,1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 20px; }
+.modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+.modal-btns .btn-primary { flex: 1; }
+
+/* ============================================================
+   GAME SCREEN
+   ============================================================ */
+.game-container { padding: 12px 12px 0; }
+
+/* Scorecard */
+.scorecard-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.scorecard {
+  min-width: 560px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .8rem;
+}
+.scorecard thead tr { background: var(--bg3); }
+.scorecard th {
+  padding: 8px 4px;
+  text-align: center;
+  color: var(--text2);
+  font-weight: 600;
+  border-right: 1px solid var(--border);
+  font-size: .7rem;
+  text-transform: uppercase;
+}
+.scorecard th:last-child { border-right: none; }
+.scorecard td {
+  border-right: 1px solid var(--border);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  vertical-align: top;
+  background: var(--bg2);
+  min-width: 46px;
+}
+.scorecard td:last-child { border-right: none; }
+.scorecard td.active-frame { background: rgba(0,229,255,.07); }
+.frame-cell { position: relative; }
+.frame-rolls {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 4px 4px 2px;
+  min-height: 24px;
+}
+.roll-bubble {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .7rem;
+  font-weight: 700;
+}
+.roll-strike { background: var(--strike); color: #000; }
+.roll-spare  { background: var(--spare);  color: #000; }
+.roll-open   { background: transparent;   color: var(--text); }
+.roll-gutter { background: transparent;   color: var(--text2); }
+.frame-score {
+  padding: 4px 4px 6px;
+  font-weight: 700;
+  font-size: .95rem;
+  color: var(--text);
+  text-align: center;
+}
+.frame-score.pending { color: var(--text2); font-size: .7rem; }
+
+/* Game meta bar */
+.game-meta {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.meta-chip {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: .78rem;
+  color: var(--text2);
+}
+.meta-chip span { color: var(--neon); font-weight: 700; }
+
+/* Pin diagram */
+.pin-area {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.pin-area-title {
+  text-align: center;
+  font-size: .75rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 14px;
+}
+.pin-triangle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.pin-row { display: flex; gap: 10px; justify-content: center; }
+
+.pin {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--text2);
+  background: var(--bg3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  font-weight: 700;
+  color: var(--text2);
+  transition: all .15s;
+  position: relative;
+  user-select: none;
+}
+.pin.standing {
+  border-color: #ddd;
+  background: #f5f5f5;
+  color: #222;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+.pin.knocked {
+  border-color: #333;
+  background: #222;
+  color: #444;
+  box-shadow: none;
+}
+.pin.knocked-roll1 {
+  border-color: #2a2a3a;
+  background: #161620;
+  color: #333;
+}
+.pin:active { transform: scale(.9); }
+.pin.disabled { pointer-events: none; }
+
+.pin-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.pin-btn {
+  flex: 1;
+  padding: 13px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: .9rem;
+  transition: all .15s;
+}
+.pin-btn:active { transform: scale(.96); }
+
+.btn-all-down {
+  background: rgba(255,215,0,.15);
+  border: 1px solid rgba(255,215,0,.4);
+  color: var(--strike);
+}
+.btn-confirm {
+  background: var(--neon);
+  color: #000;
+  max-width: 180px;
+}
+.btn-clear {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  max-width: 100px;
+}
+
+/* Roll indicator */
+.roll-indicator {
+  text-align: center;
+  font-size: .8rem;
+  color: var(--text2);
+  margin-bottom: 10px;
+}
+.roll-indicator .ri-frame {
+  font-weight: 700;
+  color: var(--text);
+  font-size: .95rem;
+}
+.roll-indicator .ri-roll {
+  color: var(--neon);
+}
+
+/* Game complete card */
+.game-complete {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-align: center;
+  margin: 12px 0;
+}
+.game-complete .gc-score {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: var(--neon);
+  line-height: 1;
+}
+.game-complete .gc-handi {
+  font-size: 1.1rem;
+  color: var(--text2);
+  margin-top: 4px;
+}
+.game-complete .gc-handi span { color: var(--neon2); font-weight: 700; }
+.game-complete .gc-label { font-size: .75rem; color: var(--text2); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+
+/* ============================================================
+   STATS SCREEN
+   ============================================================ */
+.stats-container { padding: 12px 16px; }
+
+.stats-league-picker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+  scrollbar-width: none;
+}
+.stats-league-picker::-webkit-scrollbar { display: none; }
+
+.league-pill {
+  flex-shrink: 0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  font-size: .85rem;
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap;
+  transition: all .2s;
+}
+.league-pill.active {
+  background: rgba(0,229,255,.15);
+  border-color: var(--neon);
+  color: var(--neon);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.stats-grid .stat-card .val { font-size: 1.4rem; }
+
+.stats-section {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.stats-section h3 {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text2);
+  margin-bottom: 14px;
+}
+
+/* Pin leave chart */
+.pin-leave-chart { display: flex; flex-direction: column; gap: 6px; }
+.plc-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .8rem;
+}
+.plc-label {
+  width: 60px;
+  color: var(--text2);
+  flex-shrink: 0;
+  text-align: right;
+  font-size: .75rem;
+}
+.plc-bar-wrap {
+  flex: 1;
+  background: var(--bg3);
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+}
+.plc-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon3), var(--neon));
+  border-radius: 4px;
+  transition: width .4s;
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+}
+.plc-count { width: 28px; text-align: right; color: var(--text2); font-size: .75rem; flex-shrink: 0; }
+
+/* Year comparison table */
+.year-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.year-table th {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.year-table td {
+  padding: 10px 6px;
+  border-bottom: 1px solid rgba(42,42,58,.5);
+}
+.year-table tr:last-child td { border-bottom: none; }
+.year-table .yr-avg { font-weight: 700; color: var(--neon); }
+
+/* Recent games list */
+.recent-games { display: flex; flex-direction: column; gap: 6px; }
+.rg-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border-radius: 8px;
+}
+.rg-date { font-size: .78rem; color: var(--text2); }
+.rg-scores { display: flex; gap: 8px; align-items: center; }
+.rg-score { font-weight: 700; font-size: .95rem; }
+.rg-handi { font-size: .75rem; color: var(--neon2); }
+
+/* ============================================================
+   SESSIONS SCREEN
+   ============================================================ */
+.sessions-container { padding: 0 16px 16px; }
+
+.session-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.session-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+.session-date { font-weight: 600; }
+.session-meta { font-size: .75rem; color: var(--text2); margin-top: 2px; }
+.session-scores { display: flex; gap: 8px; }
+.session-score-badge {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: .85rem;
+  font-weight: 700;
+}
+
+.session-games {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  display: none;
+}
+.session-card.expanded .session-games { display: block; }
+.session-game-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(42,42,58,.5);
+  font-size: .9rem;
+}
+.session-game-row:last-child { border-bottom: none; }
+
+/* ============================================================
+   SETTINGS SCREEN
+   ============================================================ */
+.settings-container { padding: 0 16px 16px; }
+
+.settings-section {
+  margin-bottom: 20px;
+}
+.settings-section h3 {
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text2);
+  padding: 12px 0 8px;
+}
+
+.settings-league-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+}
+.slc-header { display: flex; align-items: center; justify-content: space-between; }
+.slc-name { font-weight: 600; }
+.slc-meta { font-size: .75rem; color: var(--text2); margin-top: 3px; }
+.slc-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+.user-info {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.user-email { font-size: .85rem; color: var(--text2); }
+.btn-logout {
+  padding: 8px 14px;
+  background: rgba(255,68,68,.1);
+  border: 1px solid rgba(255,68,68,.25);
+  border-radius: 8px;
+  color: var(--danger);
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+#toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + 72px);
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: .85rem;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s, transform .3s;
+  z-index: 300;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+#toast.success { border-color: var(--success); color: var(--success); }
+#toast.error   { border-color: var(--danger);  color: var(--danger);  }
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+.spinner {
+  width: 32px; height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--neon);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin: 40px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--text2);
+}
+.empty-state .es-icon { font-size: 2.5rem; margin-bottom: 12px; opacity: .5; }
+.empty-state .es-text { font-size: .9rem; }
+
+/* Syncing indicator */
+.sync-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  display: inline-block;
+  margin-right: 4px;
+}
+.sync-dot.offline { background: var(--neon2); }
+
+/* ============================================================
+   GAME SELECTOR (within session)
+   ============================================================ */
+.game-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+.game-tab {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  font-weight: 600;
+  font-size: .85rem;
+  color: var(--text2);
+  text-align: center;
+  transition: all .2s;
+}
+.game-tab.active {
+  background: rgba(0,229,255,.12);
+  border-color: var(--neon);
+  color: var(--neon);
+}
+.game-tab.done {
+  background: rgba(68,255,136,.08);
+  border-color: rgba(68,255,136,.3);
+  color: var(--success);
+}
+
+/* ============================================================
+   LEAGUE DETAIL / SESSION START
+   ============================================================ */
+.session-start-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.session-start-bar .btn-primary {
+  width: auto;
+  padding: 10px 20px;
+  font-size: .85rem;
+}
+
+/* inline form */
+.inline-form {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.inline-form h4 { font-size: .9rem; font-weight: 700; margin-bottom: 14px; color: var(--neon); }
+.inline-form .form-row { display: flex; gap: 10px; }
+.inline-form .form-row .form-group { flex: 1; }
+
+/* ============================================================
+   OFFLINE BANNER
+   ============================================================ */
+#offline-banner {
+  display: none;
+  background: rgba(255,107,53,.15);
+  border-bottom: 1px solid rgba(255,107,53,.3);
+  padding: 8px 16px;
+  font-size: .8rem;
+  color: var(--neon2);
+  text-align: center;
+}
+#offline-banner.show { display: block; }
+
+/* ============================================================
+   MISC
+   ============================================================ */
+.divider { height: 1px; background: var(--border); margin: 8px 16px; }
+.text-center { text-align: center; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.neon { color: var(--neon); }
+.neon2 { color: var(--neon2); }
+.small { font-size: .78rem; color: var(--text2); }
+.bold { font-weight: 700; }
+
+select option { background: var(--bg2); }
+
+/* Chevron for session expand */
+.chevron {
+  width: 20px; height: 20px;
+  border-right: 2px solid var(--text2);
+  border-bottom: 2px solid var(--text2);
+  transform: rotate(45deg);
+  transition: transform .2s;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.session-card.expanded .chevron { transform: rotate(225deg); }
+
+/* no-games placeholder in game tab */
+.no-game-msg {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--text2);
+  font-size: .9rem;
+}
+</style>
+</head>
+<body>
+
+<!-- Offline banner -->
+<div id="offline-banner">You are offline. Games will sync when connection is restored.</div>
+
+<!-- Main app -->
+<div id="app">
+  <div id="content">
+
+    <!-- AUTH SCREEN -->
+    <div id="screen-auth" class="screen active" style="display:flex;">
+      <div class="auth-logo">
+        <div class="ball"></div>
+        <h1>Bowl<span>Track</span></h1>
+        <p>Your personal bowling companion</p>
+      </div>
+      <div class="auth-card">
+        <div class="auth-tabs">
+          <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+          <button class="auth-tab" onclick="switchAuthTab('signup')">Sign Up</button>
+        </div>
+        <div id="auth-login-form">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+          </div>
+          <div id="login-error" class="auth-error"></div>
+          <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+        </div>
+        <div id="auth-signup-form" style="display:none;">
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label>Password (min 6 chars)</label>
+            <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password">
+          </div>
+          <div id="signup-error" class="auth-error"></div>
+          <button class="btn-primary" id="signup-btn" onclick="doSignup()">Create Account</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:16px 0 4px;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="color:var(--text2);font-size:.8rem;">or</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+        <button onclick="doGoogleLogin()" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:.95rem;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;">
+          <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.08 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-3.59-13.46-8.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Continue with Google
+        </button>
+      </div>
+    </div>
+
+    <!-- HOME SCREEN -->
+    <div id="screen-home" class="screen">
+      <div class="page-header">
+        <div>
+          <h2>My Leagues</h2>
+          <div class="subtitle" id="home-subtitle">Loading...</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="sync-dot" id="sync-dot"></span>
+        </div>
+      </div>
+
+      <div class="home-stats" id="home-stats">
+        <div class="stat-card">
+          <div class="val" id="hs-overall-avg">—</div>
+          <div class="lbl">Overall Avg</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="hs-games-count">—</div>
+          <div class="lbl">Games Played</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="hs-high">—</div>
+          <div class="lbl">High Game</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="hs-leagues">—</div>
+          <div class="lbl">Leagues</div>
+        </div>
+      </div>
+
+      <div class="section-title">Leagues</div>
+      <div class="league-list" id="league-list">
+        <div class="spinner"></div>
+      </div>
+
+      <div class="section-title" style="margin-top:8px;">Practice</div>
+      <div class="league-card" onclick="openPracticeSessions()" style="cursor:pointer;">
+        <div class="lc-info">
+          <div class="lc-name">Practice Sessions</div>
+          <div class="lc-meta">Open bowling &amp; solo practice</div>
+        </div>
+        <div>
+          <div class="lc-avg" id="practice-avg">—</div>
+          <div class="lc-avg-lbl">average</div>
+        </div>
+      </div>
+
+      <button class="fab" onclick="openNewLeagueModal()" title="New League">+</button>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="screen-game" class="screen">
+      <div class="page-header">
+        <div>
+          <h2 id="game-screen-title">Active Game</h2>
+          <div class="subtitle" id="game-screen-subtitle"></div>
+        </div>
+        <button class="btn-secondary" style="padding:8px 12px;font-size:.8rem;" onclick="abandonGame()">Exit</button>
+      </div>
+
+      <!-- Game tabs (Game 1 / 2 / 3) -->
+      <div class="game-tabs" id="game-tabs"></div>
+
+      <!-- Per-game area -->
+      <div class="game-container" id="game-area">
+        <div class="spinner"></div>
+      </div>
+    </div>
+
+    <!-- STATS SCREEN -->
+    <div id="screen-stats" class="screen">
+      <div class="page-header">
+        <h2>Statistics</h2>
+      </div>
+      <div class="stats-container">
+        <div class="stats-league-picker" id="stats-league-picker"></div>
+        <div id="stats-content"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- SESSIONS SCREEN -->
+    <div id="screen-sessions" class="screen">
+      <div class="page-header">
+        <div>
+          <h2 id="sessions-title">Sessions</h2>
+          <div class="subtitle" id="sessions-subtitle"></div>
+        </div>
+        <button class="btn-secondary" style="padding:8px 12px;font-size:.8rem;" onclick="showScreen('home')">Back</button>
+      </div>
+      <div class="sessions-container" id="sessions-container">
+        <div class="spinner"></div>
+      </div>
+      <button class="fab" id="new-session-fab" onclick="startNewSession()">+</button>
+    </div>
+
+    <!-- SETTINGS SCREEN -->
+    <div id="screen-settings" class="screen">
+      <div class="page-header">
+        <h2>Settings</h2>
+      </div>
+      <div class="settings-container">
+        <div class="settings-section">
+          <h3>Account</h3>
+          <div class="user-info">
+            <div class="user-email" id="settings-email">—</div>
+            <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Leagues</h3>
+          <div id="settings-leagues-list"></div>
+          <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="openNewLeagueModal()">+ Add League</button>
+        </div>
+
+        <div class="settings-section">
+          <h3>Data</h3>
+          <button class="btn-secondary" style="width:100%;margin-bottom:8px;" onclick="syncOfflineGames()">Sync Offline Games</button>
+          <button class="btn-secondary" style="width:100%;" onclick="clearLocalCache()">Clear Local Cache</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottom-nav">
+    <button class="nav-btn active" id="nav-home" onclick="showScreen('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      Home
+    </button>
+    <button class="nav-btn" id="nav-game" onclick="showScreen('game')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="14" cy="9" r="1" fill="currentColor"/><circle cx="13" cy="14" r="1" fill="currentColor"/>
+      </svg>
+      Bowl
+    </button>
+    <button class="nav-btn" id="nav-stats" onclick="showScreen('stats')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+      </svg>
+      Stats
+    </button>
+    <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      Settings
+    </button>
+  </nav>
+</div>
+
+<!-- MODAL: New/Edit League -->
+<div class="modal-overlay" id="modal-league">
+  <div class="modal">
+    <h3 id="modal-league-title">New League</h3>
+    <input type="hidden" id="modal-league-id">
+    <div class="form-group">
+      <label>League Name</label>
+      <input type="text" id="league-name-input" placeholder="Thursday Night League" maxlength="60">
+    </div>
+    <div class="form-group">
+      <label>Handicap Base Score</label>
+      <input type="number" id="league-base-input" value="220" min="100" max="300">
+    </div>
+    <div class="form-group">
+      <label>Handicap Percentage (%)</label>
+      <input type="number" id="league-pct-input" value="90" min="1" max="100">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-league')">Cancel</button>
+      <button class="btn-primary" onclick="saveLeague()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: New Session -->
+<div class="modal-overlay" id="modal-session">
+  <div class="modal">
+    <h3>Start New Session</h3>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="session-date-input">
+    </div>
+    <div class="form-group">
+      <label>Number of Games</label>
+      <select id="session-games-input">
+        <option value="1">1 Game</option>
+        <option value="2">2 Games</option>
+        <option value="3" selected>3 Games</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea id="session-notes-input" rows="2" placeholder="e.g. Week 12, Lane 14-15"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-session')">Cancel</button>
+      <button class="btn-primary" onclick="createSession()">Start Bowling!</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// ============================================================
+// PWA MANIFEST + SERVICE WORKER
+// ============================================================
+const MANIFEST = {
+  name: "BowlTrack",
+  short_name: "BowlTrack",
+  description: "Personal bowling score & stats tracker",
+  start_url: "./bowling_tracker.html",
+  display: "standalone",
+  background_color: "#0a0a0f",
+  theme_color: "#0a0a0f",
+  icons: [
+    {
+      src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Ccircle cx='96' cy='96' r='96' fill='%230a0a0f'/%3E%3Ccircle cx='96' cy='96' r='72' fill='%23222'/%3E%3Ccircle cx='78' cy='82' r='8' fill='%23444'/%3E%3Ccircle cx='100' cy='76' r='8' fill='%23444'/%3E%3Ccircle cx='108' cy='98' r='8' fill='%23444'/%3E%3C/svg%3E",
+      sizes: "192x192",
+      type: "image/svg+xml"
+    }
+  ]
+};
+
+const blob = new Blob([JSON.stringify(MANIFEST)], {type: 'application/json'});
+document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
+
+// Register service worker inline
+if ('serviceWorker' in navigator) {
+  const swCode = `
+const CACHE = 'bowltrack-v1';
+const URLS = [self.location.href.replace('/bowling_tracker_sw.js','')];
+self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll([]))); self.skipWaiting(); });
+self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  if (e.request.url.includes('supabase')) return; // never cache API calls
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+});
+  `;
+  const swBlob = new Blob([swCode], {type: 'text/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+}
+
+// ============================================================
+// SUPABASE INIT
+// ============================================================
+const SUPA_URL = 'https://mzjicrhoyftmzeqqjzbj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amljcmhveWZ0bXplcXFqemJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTA2MjIsImV4cCI6MjA4OTY2NjYyMn0.AnCmuMZQhvBg_vU5tx4oaNo18eJdieX02d4uawfeEI0';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ============================================================
+// APP STATE
+// ============================================================
+let currentUser = null;
+let leagues = [];
+let currentSession = null;   // { id, league_id, date, games: [...] }
+let currentLeague = null;    // league object for sessions screen
+let activeGameIndex = 0;     // 0-based index into currentSession.games
+
+// Game state per game slot
+// gameStates[i] = { gameId, frames: [{roll1,roll2,roll3,roll1_pins,roll2_pins,roll3_pins,frameId}×10], done, score }
+let gameStates = [];
+
+let currentFrame  = 1;   // 1-10
+let currentRoll   = 1;   // 1-3 (roll within frame)
+let selectedPins  = new Set(); // pins selected on current roll click
+
+// Offline queue
+let offlineQueue = JSON.parse(localStorage.getItem('bt_offline_queue') || '[]');
+
+// ============================================================
+// ONLINE / OFFLINE
+// ============================================================
+function updateOnlineStatus() {
+  const offline = !navigator.onLine;
+  document.getElementById('offline-banner').classList.toggle('show', offline);
+  const dot = document.getElementById('sync-dot');
+  if (dot) dot.classList.toggle('offline', offline);
+}
+window.addEventListener('online',  () => { updateOnlineStatus(); syncOfflineGames(); });
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
+
+// ============================================================
+// AUTH
+// ============================================================
+sb.auth.onAuthStateChange((event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    showScreen('home');
+    document.getElementById('bottom-nav').style.display = '';
+    loadHomeData();
+  } else {
+    currentUser = null;
+    showAuthScreen();
+    document.getElementById('bottom-nav').style.display = 'none';
+  }
+});
+
+function showAuthScreen() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-auth').classList.add('active');
+  document.getElementById('screen-auth').style.display = 'flex';
+  document.getElementById('bottom-nav').style.display = 'none';
+}
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => {
+    t.classList.toggle('active', (i===0 && tab==='login') || (i===1 && tab==='signup'));
+  });
+  document.getElementById('auth-login-form').style.display  = tab==='login'  ? '' : 'none';
+  document.getElementById('auth-signup-form').style.display = tab==='signup' ? '' : 'none';
+}
+
+async function doGoogleLogin() {
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: 'https://polite-torte-aecec3.netlify.app' }
+  });
+  if (error) showToast(error.message, 'error');
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn   = document.getElementById('login-btn');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Please fill in all fields.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if (error) { errEl.textContent = error.message; }
+}
+
+async function doSignup() {
+  const email = document.getElementById('signup-email').value.trim();
+  const pass  = document.getElementById('signup-password').value;
+  const errEl = document.getElementById('signup-error');
+  const btn   = document.getElementById('signup-btn');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Please fill in all fields.'; return; }
+  if (pass.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  const { error } = await sb.auth.signUp({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Create Account';
+  if (error) { errEl.textContent = error.message; }
+  else { errEl.style.color = 'var(--success)'; errEl.textContent = 'Account created! Check your email to confirm, then sign in.'; }
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  leagues = []; currentSession = null; gameStates = [];
+}
+
+// ============================================================
+// SCREEN NAVIGATION
+// ============================================================
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    if (s.id === 'screen-auth') s.style.display = 'none';
+  });
+  const el = document.getElementById('screen-' + name);
+  if (el) { el.classList.add('active'); el.style.display = ''; }
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + name);
+  if (navEl) navEl.classList.add('active');
+  // Trigger screen-specific loads
+  if (name === 'stats')    loadStatsScreen();
+  if (name === 'settings') loadSettingsScreen();
+  if (name === 'game' && !currentSession) showNoActiveGame();
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+let toastTimer;
+function showToast(msg, type='info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 2800);
+}
+
+// ============================================================
+// MODAL
+// ============================================================
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
+});
+
+// ============================================================
+// HOME SCREEN
+// ============================================================
+async function loadHomeData() {
+  if (!currentUser) return;
+  document.getElementById('home-subtitle').textContent = currentUser.email;
+  document.getElementById('settings-email').textContent = currentUser.email;
+
+  const { data, error } = await sb.from('leagues').select('*').order('created_at');
+  if (error) { showToast('Error loading leagues', 'error'); return; }
+  leagues = data || [];
+  renderLeagueList();
+  await loadHomeStats();
+}
+
+async function loadHomeStats() {
+  // Fetch all games for this user via join
+  const { data: gamesData } = await sb
+    .from('games')
+    .select('total_score, sessions(league_id, leagues(user_id))')
+    .not('total_score', 'is', null);
+
+  const myGames = (gamesData || []).filter(g => g.sessions?.leagues?.user_id === currentUser.id);
+  const scores = myGames.map(g => g.total_score).filter(s => s != null && s >= 0);
+
+  document.getElementById('hs-overall-avg').textContent = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : '—';
+  document.getElementById('hs-games-count').textContent = scores.length || '0';
+  document.getElementById('hs-high').textContent = scores.length ? Math.max(...scores) : '—';
+  document.getElementById('hs-leagues').textContent = leagues.length;
+}
+
+async function renderLeagueList() {
+  const list = document.getElementById('league-list');
+  if (!leagues.length) {
+    list.innerHTML = '<div class="empty-state"><div class="es-icon">🎳</div><div class="es-text">No leagues yet.<br>Tap + to create your first league.</div></div>';
+    return;
+  }
+
+  // Load averages for each league
+  const avgs = {};
+  for (const lg of leagues) {
+    avgs[lg.id] = await getLeagueAverage(lg.id);
+  }
+
+  list.innerHTML = leagues.map(lg => {
+    const avg = avgs[lg.id];
+    const handi = calcHandicap(lg, avg);
+    return `
+    <div class="league-card" onclick="openLeagueSessions('${lg.id}')">
+      <div class="lc-info">
+        <div class="lc-name">${esc(lg.name)}</div>
+        <div class="lc-meta">Hdcp base ${lg.handicap_base} @ ${lg.handicap_pct}% &nbsp;·&nbsp; Hdcp: <span style="color:var(--neon2)">${handi}</span></div>
+      </div>
+      <div>
+        <div class="lc-avg">${avg !== null ? Math.round(avg) : '—'}</div>
+        <div class="lc-avg-lbl">average</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Update practice average card
+  const practiceAvg = await getPracticeAverage();
+  const practiceEl = document.getElementById('practice-avg');
+  if (practiceEl) practiceEl.textContent = practiceAvg !== null ? Math.round(practiceAvg) : '—';
+}
+
+async function getPracticeAverage() {
+  const { data } = await sb
+    .from('games')
+    .select('total_score, sessions!inner(session_type, user_id)')
+    .eq('sessions.session_type', 'practice')
+    .eq('sessions.user_id', currentUser.id)
+    .not('total_score', 'is', null);
+  const scores = (data||[]).map(g=>g.total_score).filter(s=>s!=null);
+  return scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null;
+}
+
+async function getLeagueAverage(leagueId) {
+  const { data } = await sb
+    .from('games')
+    .select('total_score, sessions!inner(league_id)')
+    .eq('sessions.league_id', leagueId)
+    .not('total_score', 'is', null);
+  const scores = (data||[]).map(g=>g.total_score).filter(s=>s!=null);
+  return scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null;
+}
+
+function calcHandicap(league, avg) {
+  if (avg === null) return 0;
+  const h = Math.round((league.handicap_base - avg) * (league.handicap_pct / 100));
+  return Math.max(0, h);
+}
+
+// ============================================================
+// LEAGUE MANAGEMENT
+// ============================================================
+function openNewLeagueModal() {
+  document.getElementById('modal-league-title').textContent = 'New League';
+  document.getElementById('modal-league-id').value = '';
+  document.getElementById('league-name-input').value = '';
+  document.getElementById('league-base-input').value = '220';
+  document.getElementById('league-pct-input').value = '90';
+  openModal('modal-league');
+}
+
+function openEditLeagueModal(id) {
+  const lg = leagues.find(l=>l.id===id);
+  if (!lg) return;
+  document.getElementById('modal-league-title').textContent = 'Edit League';
+  document.getElementById('modal-league-id').value = id;
+  document.getElementById('league-name-input').value = lg.name;
+  document.getElementById('league-base-input').value = lg.handicap_base;
+  document.getElementById('league-pct-input').value = lg.handicap_pct;
+  openModal('modal-league');
+}
+
+async function saveLeague() {
+  const id   = document.getElementById('modal-league-id').value;
+  const name = document.getElementById('league-name-input').value.trim();
+  const base = parseInt(document.getElementById('league-base-input').value) || 220;
+  const pct  = parseInt(document.getElementById('league-pct-input').value)  || 90;
+  if (!name) { showToast('Please enter a league name', 'error'); return; }
+
+  if (id) {
+    const { error } = await sb.from('leagues').update({ name, handicap_base: base, handicap_pct: pct }).eq('id', id);
+    if (error) { showToast('Error saving league', 'error'); return; }
+  } else {
+    const { error } = await sb.from('leagues').insert({ user_id: currentUser.id, name, handicap_base: base, handicap_pct: pct });
+    if (error) { showToast('Error creating league', 'error'); return; }
+  }
+  closeModal('modal-league');
+  showToast('League saved!', 'success');
+  await loadHomeData();
+  loadSettingsScreen();
+}
+
+async function deleteLeague(id) {
+  if (!confirm('Delete this league and all its data?')) return;
+  const { error } = await sb.from('leagues').delete().eq('id', id);
+  if (error) { showToast('Error deleting league', 'error'); return; }
+  showToast('League deleted');
+  await loadHomeData();
+  loadSettingsScreen();
+}
+
+// ============================================================
+// SESSIONS SCREEN
+// ============================================================
+async function openLeagueSessions(leagueId) {
+  currentLeague = leagues.find(l=>l.id===leagueId);
+  if (!currentLeague) return;
+  showScreen('sessions');
+  document.getElementById('sessions-title').textContent = currentLeague.name;
+  document.getElementById('sessions-subtitle').textContent = `Hdcp base ${currentLeague.handicap_base} @ ${currentLeague.handicap_pct}%`;
+  document.getElementById('new-session-fab').onclick = startNewSession;
+  await loadSessions(leagueId);
+}
+
+async function openPracticeSessions() {
+  currentLeague = null;
+  showScreen('sessions');
+  document.getElementById('sessions-title').textContent = 'Practice';
+  document.getElementById('sessions-subtitle').textContent = 'Open bowling & solo practice';
+  document.getElementById('new-session-fab').onclick = startNewSession;
+  await loadSessions(null);
+}
+
+async function loadSessions(leagueId) {
+  const container = document.getElementById('sessions-container');
+  container.innerHTML = '<div class="spinner"></div>';
+
+  let query = sb
+    .from('sessions')
+    .select('*, games(id, game_number, total_score)')
+    .order('date', { ascending: false });
+  if (leagueId) {
+    query = query.eq('league_id', leagueId);
+  } else {
+    query = query.eq('session_type', 'practice');
+  }
+  const { data: sessions, error } = await query;
+
+  if (error) { console.error('loadSessions error:', error); showToast('Error: ' + error.message, 'error'); return; }
+
+  if (!sessions || !sessions.length) {
+    const label = leagueId ? 'league sessions' : 'practice sessions';
+    container.innerHTML = `<div class="empty-state"><div class="es-icon">🎳</div><div class="es-text">No ${label} yet.<br>Tap + to start your first session.</div></div>`;
+    return;
+  }
+
+  const isPractice = !leagueId;
+  const avg = isPractice ? null : await getLeagueAverage(leagueId);
+  const handi = isPractice ? 0 : calcHandicap(currentLeague, avg);
+
+  container.innerHTML = sessions.map(sess => {
+    const games = (sess.games || []).sort((a,b)=>a.game_number-b.game_number);
+    const scoreBadges = games.filter(g=>g.total_score!=null).map(g =>
+      `<div class="session-score-badge">${g.total_score}</div>`
+    ).join('');
+
+    const gameRows = games.map(g => {
+      const score = g.total_score != null ? g.total_score : '—';
+      const handiScore = g.total_score != null ? g.total_score + handi : '—';
+      return `
+        <div class="session-game-row">
+          <span>Game ${g.game_number}</span>
+          <div style="display:flex;gap:16px;align-items:center;">
+            <span class="bold">${score}</span>
+            ${!isPractice ? `<span class="small">+${handi} = <span class="neon2">${handiScore}</span></span>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    const dateStr = formatDate(sess.date);
+    return `
+    <div class="session-card" id="sess-${sess.id}">
+      <div class="session-header" onclick="toggleSession('${sess.id}')">
+        <div>
+          <div class="session-date">${dateStr}</div>
+          <div class="session-meta">${games.length} game${games.length!==1?'s':''} ${sess.notes ? '· '+esc(sess.notes) : ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${scoreBadges}
+          <div class="chevron"></div>
+        </div>
+      </div>
+      <div class="session-games">
+        ${gameRows || '<div class="small" style="padding:8px 0;">No completed games.</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSession(id) {
+  document.getElementById('sess-' + id)?.classList.toggle('expanded');
+}
+
+function startNewSession() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('session-date-input').value = today;
+  document.getElementById('session-notes-input').value = '';
+  openModal('modal-session');
+}
+
+async function createSession() {
+  const date  = document.getElementById('session-date-input').value;
+  const notes = document.getElementById('session-notes-input').value.trim();
+  const numGames = parseInt(document.getElementById('session-games-input').value) || 3;
+  if (!date) { showToast('Please select a date', 'error'); return; }
+
+  // Create session (league or practice)
+  const insertData = currentLeague
+    ? { league_id: currentLeague.id, user_id: currentUser.id, date, notes, session_type: 'league' }
+    : { user_id: currentUser.id, date, notes, session_type: 'practice' };
+  const { data: sessData, error: sessErr } = await sb.from('sessions')
+    .insert(insertData)
+    .select().single();
+  if (sessErr) { showToast('Error creating session', 'error'); return; }
+
+  // Create game records
+  const gameInserts = [];
+  for (let i = 1; i <= numGames; i++) {
+    gameInserts.push({ session_id: sessData.id, game_number: i });
+  }
+  const { data: gamesData, error: gamesErr } = await sb.from('games')
+    .insert(gameInserts).select();
+  if (gamesErr) { showToast('Error creating games', 'error'); return; }
+
+  closeModal('modal-session');
+
+  // Set up active session state
+  currentSession = {
+    id:           sessData.id,
+    league_id:    currentLeague ? currentLeague.id : null,
+    session_type: currentLeague ? 'league' : 'practice',
+    date:         sessData.date,
+    games:        gamesData.sort((a,b) => a.game_number - b.game_number)
+  };
+
+  // Init game states
+  gameStates = currentSession.games.map(g => ({
+    gameId:  g.id,
+    gameNum: g.game_number,
+    frames:  initFrames(),
+    done:    false,
+    score:   null
+  }));
+
+  activeGameIndex = 0;
+  showScreen('game');
+  renderGameScreen();
+}
+
+function initFrames() {
+  return Array.from({length: 10}, (_,i) => ({
+    frameNum:    i + 1,
+    frameId:     null,
+    roll1:       null, roll2: null, roll3: null,
+    roll1_pins:  null, roll2_pins: null, roll3_pins: null,
+    saved:       false
+  }));
+}
+
+// ============================================================
+// GAME SCREEN
+// ============================================================
+function showNoActiveGame() {
+  const area = document.getElementById('game-area');
+  area.innerHTML = `
+    <div class="no-game-msg">
+      <div style="font-size:2rem;margin-bottom:12px;">🎳</div>
+      <div>No active session.</div>
+      <div class="small mt-8">Go to Home and select a league or practice session to start bowling.</div>
+      <button class="btn-primary" style="margin:20px auto 0;max-width:200px;" onclick="showScreen('home')">Go to Home</button>
+    </div>`;
+  document.getElementById('game-tabs').innerHTML = '';
+  document.getElementById('game-screen-title').textContent = 'Bowl';
+  document.getElementById('game-screen-subtitle').textContent = '';
+}
+
+function renderGameScreen() {
+  if (!currentSession) { showNoActiveGame(); return; }
+
+  const league = leagues.find(l=>l.id===currentSession.league_id);
+  document.getElementById('game-screen-title').textContent = league ? esc(league.name) : (currentSession.session_type === 'practice' ? 'Practice' : 'Active Session');
+  document.getElementById('game-screen-subtitle').textContent = formatDate(currentSession.date);
+
+  // Render game tabs
+  const tabsEl = document.getElementById('game-tabs');
+  tabsEl.innerHTML = gameStates.map((gs, i) => {
+    let cls = '';
+    if (i === activeGameIndex) cls = 'active';
+    else if (gs.done) cls = 'done';
+    return `<button class="game-tab ${cls}" onclick="switchGame(${i})">
+      Game ${gs.gameNum}${gs.done && gs.score!=null ? '<br><span style="font-size:.75rem;">'+gs.score+'</span>' : ''}
+    </button>`;
+  }).join('');
+
+  renderActiveGame();
+}
+
+function switchGame(idx) {
+  const gs = gameStates[activeGameIndex];
+  // Save current frame/roll state per game
+  if (gs) {
+    gs._savedFrame = currentFrame;
+    gs._savedRoll  = currentRoll;
+  }
+  activeGameIndex = idx;
+  const ngs = gameStates[activeGameIndex];
+  if (ngs._savedFrame) {
+    currentFrame = ngs._savedFrame;
+    currentRoll  = ngs._savedRoll;
+  } else {
+    // Determine current position from frames
+    recalcPosition(ngs);
+  }
+  selectedPins.clear();
+  renderGameScreen();
+}
+
+function recalcPosition(gs) {
+  currentFrame = 1; currentRoll = 1;
+  for (let fi = 0; fi < 10; fi++) {
+    const f = gs.frames[fi];
+    if (f.roll1 === null) { currentFrame = fi+1; currentRoll = 1; return; }
+    if (fi === 9) {
+      // 10th frame
+      if (f.roll2 === null) { currentFrame = 10; currentRoll = 2; return; }
+      if (isStrike(f.roll1) || isSpare10(f)) {
+        if (f.roll3 === null) { currentFrame = 10; currentRoll = 3; return; }
+      }
+      currentFrame = 10; currentRoll = 4; // done
+      return;
+    }
+    if (isStrike(f.roll1)) continue; // next frame
+    if (f.roll2 === null) { currentFrame = fi+1; currentRoll = 2; return; }
+  }
+  currentFrame = 11; // done
+}
+
+function isStrike(v) { return v === 10; }
+function isSpare10(f) { return (f.roll1 + f.roll2) >= 10; } // 10th frame spare
+
+function renderActiveGame() {
+  const area = document.getElementById('game-area');
+  const gs = gameStates[activeGameIndex];
+  if (!gs) { area.innerHTML = ''; return; }
+
+  recalcPosition(gs);
+  const done = gs.done || currentFrame > 10 || (currentFrame === 10 && currentRoll === 4);
+  gs.done = done;
+
+  if (done && gs.score === null) {
+    gs.score = calculateScore(gs.frames);
+    saveGameScore(gs);
+  }
+
+  const scoreHTML  = renderScorecard(gs);
+  const metaHTML   = renderGameMeta(gs);
+
+  if (done) {
+    area.innerHTML = scoreHTML + metaHTML + renderGameComplete(gs);
+  } else {
+    const pinHTML    = renderPinArea(gs);
+    area.innerHTML   = scoreHTML + metaHTML + pinHTML;
+  }
+}
+
+function renderScorecard(gs) {
+  const frames = gs.frames;
+  const runningScores = getRunningScores(frames);
+
+  let cells = '';
+  for (let fi = 0; fi < 10; fi++) {
+    const f   = frames[fi];
+    const sc  = runningScores[fi];
+    const active = (fi+1 === currentFrame && !gs.done) ? ' active-frame' : '';
+
+    let rollsHTML = '';
+    if (fi === 9) {
+      // 10th frame: up to 3 roll bubbles
+      rollsHTML = render10thRolls(f);
+    } else {
+      rollsHTML = renderFrameRolls(f, fi, frames);
+    }
+
+    const scoreDisp = sc !== null ? `<div class="frame-score">${sc}</div>` :
+                      f.roll1 !== null ? `<div class="frame-score pending">…</div>` : `<div class="frame-score"></div>`;
+
+    cells += `<td class="frame-cell${active}">
+      <div class="frame-rolls">${rollsHTML}</div>
+      ${scoreDisp}
+    </td>`;
+  }
+
+  return `
+  <div class="scorecard-wrap">
+    <table class="scorecard">
+      <thead>
+        <tr>
+          ${Array.from({length:10},(_,i)=>`<th>${i+1}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        <tr>${cells}</tr>
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function renderFrameRolls(f, fi, frames) {
+  let html = '';
+  if (f.roll1 === null) return html;
+
+  if (isStrike(f.roll1)) {
+    html += bubble('X', 'strike');
+  } else {
+    html += bubble(f.roll1 === 0 ? '-' : f.roll1, 'open');
+    if (f.roll2 !== null) {
+      if (f.roll1 + f.roll2 === 10) html += bubble('/', 'spare');
+      else html += bubble(f.roll2 === 0 ? '-' : f.roll2, f.roll2 === 0 ? 'gutter' : 'open');
+    }
+  }
+  return html;
+}
+
+function render10thRolls(f) {
+  let html = '';
+  if (f.roll1 === null) return html;
+
+  if (isStrike(f.roll1)) {
+    html += bubble('X', 'strike');
+  } else {
+    html += bubble(f.roll1 === 0 ? '-' : f.roll1, 'open');
+  }
+
+  if (f.roll2 !== null) {
+    if (isStrike(f.roll1) && isStrike(f.roll2)) {
+      html += bubble('X', 'strike');
+    } else if (!isStrike(f.roll1) && f.roll1 + f.roll2 === 10) {
+      html += bubble('/', 'spare');
+    } else if (isStrike(f.roll1)) {
+      html += bubble(f.roll2 === 0 ? '-' : f.roll2, 'open');
+    } else {
+      html += bubble(f.roll2 === 0 ? '-' : f.roll2, 'open');
+    }
+  }
+
+  if (f.roll3 !== null) {
+    if (isStrike(f.roll3)) {
+      html += bubble('X', 'strike');
+    } else if (!isStrike(f.roll1) && !isStrike(f.roll2) && f.roll2 + f.roll3 === 10) {
+      html += bubble('/', 'spare');
+    } else if (isStrike(f.roll1) && !isStrike(f.roll2) && f.roll2 + f.roll3 === 10) {
+      html += bubble('/', 'spare');
+    } else {
+      html += bubble(f.roll3 === 0 ? '-' : f.roll3, f.roll3 === 0 ? 'gutter' : 'open');
+    }
+  }
+
+  return html;
+}
+
+function bubble(label, cls) {
+  return `<div class="roll-bubble roll-${cls}">${label}</div>`;
+}
+
+function renderGameMeta(gs) {
+  const score = calculateScore(gs.frames);
+  const maxPoss = calcMaxPossible(gs.frames);
+  const league = leagues.find(l=>l.id===currentSession?.league_id);
+  let handiHTML = '';
+  if (league) {
+    // Use existing average for handicap calc (we'll use 0 as placeholder if none)
+    const handi = gs._handi || 0;
+    handiHTML = `<div class="meta-chip">Hdcp: <span>${handi}</span> | H-Score: <span>${score !== null ? score + handi : '—'}</span></div>`;
+  }
+  return `
+  <div class="game-meta">
+    <div class="meta-chip">Score: <span>${score !== null ? score : '—'}</span></div>
+    <div class="meta-chip">Max: <span>${maxPoss}</span></div>
+    ${handiHTML}
+  </div>`;
+}
+
+function renderPinArea(gs) {
+  const frame = gs.frames[currentFrame - 1];
+  const isRoll1 = currentRoll === 1;
+  const roll1Pins = frame?.roll1_pins || [];
+
+  // Standing pins for roll 2: those not knocked in roll 1
+  let standingPins = new Set([1,2,3,4,5,6,7,8,9,10]);
+  let knockedRoll1 = new Set();
+  if (!isRoll1 && currentFrame < 10) {
+    roll1Pins.forEach(p => { standingPins.delete(p); knockedRoll1.add(p); });
+  }
+  if (!isRoll1 && currentFrame === 10) {
+    if (currentRoll === 2) {
+      if (!isStrike(frame.roll1)) {
+        // If not strike, keep remaining pins from roll 1
+        roll1Pins.forEach(p => { standingPins.delete(p); knockedRoll1.add(p); });
+      }
+      // If strike, all pins reset - all standing
+    } else if (currentRoll === 3) {
+      const roll2Pins = frame?.roll2_pins || [];
+      if (isStrike(frame.roll1) && isStrike(frame.roll2)) {
+        // All standing again
+      } else if (isStrike(frame.roll1) && !isStrike(frame.roll2)) {
+        // Remaining from roll2
+        roll2Pins.forEach(p => { standingPins.delete(p); knockedRoll1.add(p); });
+      } else {
+        // Spare: reset all
+      }
+    }
+  }
+
+  const rollLabel = currentFrame === 10 ? `10th Frame · Roll ${currentRoll}` : `Frame ${currentFrame} · Roll ${currentRoll}`;
+
+  // Pin layout rows (standard numbering: 7 8 9 10 / 4 5 6 / 2 3 / 1)
+  const rows = [[7,8,9,10],[4,5,6],[2,3],[1]];
+
+  const pinsHTML = rows.map(row =>
+    `<div class="pin-row">${row.map(p => {
+      let cls = 'pin';
+      if (knockedRoll1.has(p)) cls += ' knocked-roll1 disabled';
+      else if (selectedPins.has(p)) cls += ' knocked';
+      else cls += ' standing';
+      return `<div class="${cls}" onclick="togglePin(${p})" data-pin="${p}">${p}</div>`;
+    }).join('')}</div>`
+  ).join('');
+
+  const maxForThisRoll = getMaxPinsForRoll(gs, frame);
+
+  return `
+  <div class="pin-area">
+    <div class="pin-area-title">${rollLabel} — Tap pins knocked down</div>
+    <div class="pin-triangle">${pinsHTML}</div>
+    <div class="pin-actions">
+      <button class="pin-btn btn-clear" onclick="clearPins()">Clear</button>
+      <button class="pin-btn btn-all-down" onclick="selectAllPins(${JSON.stringify(Array.from(standingPins))})">All Down</button>
+      <button class="pin-btn btn-confirm" onclick="confirmRoll()">Confirm →</button>
+    </div>
+  </div>`;
+}
+
+function getMaxPinsForRoll(gs, frame) {
+  if (currentRoll === 1) return 10;
+  if (currentFrame < 10) return 10 - (frame.roll1 || 0);
+  // 10th frame
+  if (currentRoll === 2) {
+    if (isStrike(frame.roll1)) return 10;
+    return 10 - (frame.roll1 || 0);
+  }
+  if (currentRoll === 3) {
+    if (isStrike(frame.roll1) && isStrike(frame.roll2)) return 10;
+    if (isStrike(frame.roll1)) return 10 - (frame.roll2 || 0);
+    return 10; // spare
+  }
+  return 10;
+}
+
+function renderGameComplete(gs) {
+  const league = leagues.find(l=>l.id===currentSession?.league_id);
+  const handi = gs._handi || 0;
+  const score = gs.score || 0;
+  const handiScore = score + handi;
+  const allDone = gameStates.every(g=>g.done);
+
+  let nextBtn = '';
+  if (!allDone) {
+    const nextIdx = gameStates.findIndex(g=>!g.done);
+    nextBtn = `<button class="btn-primary" style="max-width:200px;margin:16px auto 0;" onclick="switchGame(${nextIdx})">Next Game →</button>`;
+  } else {
+    nextBtn = `<button class="btn-primary" style="max-width:200px;margin:16px auto 0;" onclick="finishSession()">Finish Session</button>`;
+  }
+
+  return `
+  <div class="game-complete">
+    <div class="gc-label">Final Score — Game ${gs.gameNum}</div>
+    <div class="gc-score">${score}</div>
+    ${league ? `<div class="gc-handi">+ ${handi} handicap = <span>${handiScore}</span></div>` : ''}
+    ${nextBtn}
+  </div>`;
+}
+
+// ============================================================
+// PIN INTERACTION
+// ============================================================
+function togglePin(pinNum) {
+  const gs = gameStates[activeGameIndex];
+  const frame = gs.frames[currentFrame - 1];
+
+  // Determine which pins are available
+  let available = new Set([1,2,3,4,5,6,7,8,9,10]);
+  if (currentRoll === 2 && currentFrame < 10) {
+    (frame.roll1_pins || []).forEach(p => available.delete(p));
+  }
+  if (currentFrame === 10) {
+    if (currentRoll === 2 && !isStrike(frame.roll1)) {
+      (frame.roll1_pins || []).forEach(p => available.delete(p));
+    }
+    if (currentRoll === 3) {
+      if (isStrike(frame.roll1) && !isStrike(frame.roll2)) {
+        (frame.roll2_pins || []).forEach(p => available.delete(p));
+      }
+    }
+  }
+
+  if (!available.has(pinNum)) return;
+
+  if (selectedPins.has(pinNum)) selectedPins.delete(pinNum);
+  else selectedPins.add(pinNum);
+
+  // Re-render just the pin area
+  const gs2 = gameStates[activeGameIndex];
+  const area = document.getElementById('game-area');
+  const pinAreaEl = area.querySelector('.pin-area');
+  if (pinAreaEl) {
+    const tmpDiv = document.createElement('div');
+    tmpDiv.innerHTML = renderPinArea(gs2);
+    pinAreaEl.replaceWith(tmpDiv.firstElementChild);
+  }
+}
+
+function clearPins() {
+  selectedPins.clear();
+  const gs = gameStates[activeGameIndex];
+  const area = document.getElementById('game-area');
+  const pinAreaEl = area.querySelector('.pin-area');
+  if (pinAreaEl) {
+    const tmpDiv = document.createElement('div');
+    tmpDiv.innerHTML = renderPinArea(gs);
+    pinAreaEl.replaceWith(tmpDiv.firstElementChild);
+  }
+}
+
+function selectAllPins(availablePins) {
+  availablePins.forEach(p => selectedPins.add(p));
+  const gs = gameStates[activeGameIndex];
+  const area = document.getElementById('game-area');
+  const pinAreaEl = area.querySelector('.pin-area');
+  if (pinAreaEl) {
+    const tmpDiv = document.createElement('div');
+    tmpDiv.innerHTML = renderPinArea(gs);
+    pinAreaEl.replaceWith(tmpDiv.firstElementChild);
+  }
+}
+
+async function confirmRoll() {
+  const gs = gameStates[activeGameIndex];
+  const frame = gs.frames[currentFrame - 1];
+  const pinsDown = Array.from(selectedPins);
+  const count = pinsDown.length;
+
+  // Validate pin count
+  const maxPins = getMaxPinsForRoll(gs, frame);
+  if (count > maxPins) { showToast(`Max ${maxPins} pins on this roll`, 'error'); return; }
+
+  // Store roll data
+  if (currentRoll === 1) {
+    frame.roll1       = count;
+    frame.roll1_pins  = pinsDown;
+  } else if (currentRoll === 2) {
+    frame.roll2       = count;
+    frame.roll2_pins  = pinsDown;
+  } else if (currentRoll === 3) {
+    frame.roll3       = count;
+    frame.roll3_pins  = pinsDown;
+  }
+
+  // Advance frame/roll
+  advancePosition(gs, frame);
+  selectedPins.clear();
+
+  // Save frame to DB
+  await saveFrame(gs, frame);
+
+  renderGameScreen();
+}
+
+function advancePosition(gs, frame) {
+  const fi = currentFrame - 1;
+
+  if (currentFrame < 10) {
+    if (currentRoll === 1) {
+      if (isStrike(frame.roll1)) {
+        // Strike: next frame
+        currentFrame++;
+        currentRoll = 1;
+      } else {
+        currentRoll = 2;
+      }
+    } else {
+      currentFrame++;
+      currentRoll = 1;
+    }
+  } else {
+    // 10th frame
+    if (currentRoll === 1) {
+      currentRoll = 2;
+    } else if (currentRoll === 2) {
+      if (isStrike(frame.roll1) || (frame.roll1 + frame.roll2 >= 10)) {
+        currentRoll = 3;
+      } else {
+        currentFrame = 11; // done
+      }
+    } else {
+      currentFrame = 11; // done
+    }
+  }
+}
+
+// ============================================================
+// SCORING ENGINE
+// ============================================================
+function calculateScore(frames) {
+  // Build a flat roll array from frames
+  const rolls = [];
+  for (let fi = 0; fi < 10; fi++) {
+    const f = frames[fi];
+    if (f.roll1 === null) break;
+    rolls.push(f.roll1);
+    if (fi < 9) {
+      if (!isStrike(f.roll1)) {
+        if (f.roll2 !== null) rolls.push(f.roll2);
+        else break;
+      }
+    } else {
+      if (f.roll2 !== null) rolls.push(f.roll2);
+      if (f.roll3 !== null) rolls.push(f.roll3);
+    }
+  }
+
+  let score = 0, ri = 0;
+  for (let fi = 0; fi < 10; fi++) {
+    if (ri >= rolls.length) break;
+    if (fi === 9) {
+      // 10th frame: just sum remaining
+      score += (rolls[ri]||0) + (rolls[ri+1]||0) + (rolls[ri+2]||0);
+      break;
+    }
+    if (rolls[ri] === 10) {
+      // Strike
+      if (ri+1 < rolls.length && ri+2 < rolls.length) {
+        score += 10 + rolls[ri+1] + rolls[ri+2];
+        ri++;
+      } else {
+        return null; // pending
+      }
+    } else if ((rolls[ri]||0) + (rolls[ri+1]||0) === 10) {
+      // Spare
+      if (ri+2 < rolls.length) {
+        score += 10 + rolls[ri+2];
+        ri += 2;
+      } else {
+        return null; // pending
+      }
+    } else {
+      score += (rolls[ri]||0) + (rolls[ri+1]||0);
+      ri += 2;
+    }
+  }
+  return score;
+}
+
+function getRunningScores(frames) {
+  const result = new Array(10).fill(null);
+  const rolls = [];
+  const frameRollStart = [];
+
+  for (let fi = 0; fi < 10; fi++) {
+    const f = frames[fi];
+    frameRollStart.push(rolls.length);
+    if (f.roll1 === null) break;
+    rolls.push(f.roll1);
+    if (fi < 9) {
+      if (!isStrike(f.roll1)) {
+        if (f.roll2 !== null) rolls.push(f.roll2);
+        else break;
+      }
+    } else {
+      if (f.roll2 !== null) rolls.push(f.roll2);
+      if (f.roll3 !== null) rolls.push(f.roll3);
+    }
+  }
+
+  let cumulative = 0;
+  for (let fi = 0; fi < 10; fi++) {
+    const ri = frameRollStart[fi];
+    if (ri === undefined || ri >= rolls.length) break;
+
+    if (fi === 9) {
+      cumulative += (rolls[ri]||0) + (rolls[ri+1]||0) + (rolls[ri+2]||0);
+      result[fi] = cumulative;
+    } else if (rolls[ri] === 10) {
+      if (ri+1 < rolls.length && ri+2 < rolls.length) {
+        cumulative += 10 + rolls[ri+1] + rolls[ri+2];
+        result[fi] = cumulative;
+      }
+    } else if ((rolls[ri]||0)+(rolls[ri+1]||0) === 10) {
+      if (ri+2 < rolls.length) {
+        cumulative += 10 + rolls[ri+2];
+        result[fi] = cumulative;
+      }
+    } else {
+      if (rolls[ri] !== undefined && rolls[ri+1] !== undefined) {
+        cumulative += rolls[ri] + rolls[ri+1];
+        result[fi] = cumulative;
+      }
+    }
+  }
+  return result;
+}
+
+function calcMaxPossible(frames) {
+  // Current known score + all strikes for remaining rolls
+  const rolls = [];
+  let lastDefinedFrame = -1;
+  for (let fi = 0; fi < 10; fi++) {
+    const f = frames[fi];
+    if (f.roll1 === null) break;
+    lastDefinedFrame = fi;
+    rolls.push(f.roll1);
+    if (fi < 9) {
+      if (!isStrike(f.roll1)) {
+        if (f.roll2 !== null) rolls.push(f.roll2); else rolls.push(null);
+      }
+    } else {
+      if (f.roll2 !== null) rolls.push(f.roll2); else rolls.push(null);
+      if (f.roll3 !== null) rolls.push(f.roll3);
+    }
+  }
+
+  // Fill remaining with 10s
+  const filled = rolls.map(r => r === null ? 10 : r);
+  // Add remaining rolls as strikes
+  const totalRolls = 12; // max rolls in a 300 game representation
+  while (filled.length < totalRolls) filled.push(10);
+
+  // Calculate score from this filled array
+  let score = 0, ri = 0;
+  for (let fi = 0; fi < 10; fi++) {
+    if (fi === 9) {
+      score += (filled[ri]||0) + (filled[ri+1]||0) + (filled[ri+2]||0);
+      break;
+    }
+    if (filled[ri] === 10) {
+      score += 10 + (filled[ri+1]||0) + (filled[ri+2]||0);
+      ri++;
+    } else if ((filled[ri]||0)+(filled[ri+1]||0) === 10) {
+      score += 10 + (filled[ri+2]||0);
+      ri += 2;
+    } else {
+      score += (filled[ri]||0) + (filled[ri+1]||0);
+      ri += 2;
+    }
+  }
+  return Math.min(300, score);
+}
+
+// ============================================================
+// FRAME PERSISTENCE
+// ============================================================
+async function saveFrame(gs, frame) {
+  const fi = frame.frameNum - 1;
+  const payload = {
+    game_id:      gs.gameId,
+    frame_number: frame.frameNum,
+    roll1:        frame.roll1,
+    roll2:        frame.roll2 !== undefined ? frame.roll2 : null,
+    roll3:        frame.roll3 !== undefined ? frame.roll3 : null,
+    roll1_pins:   frame.roll1_pins,
+    roll2_pins:   frame.roll2_pins !== undefined ? frame.roll2_pins : null,
+    roll3_pins:   frame.roll3_pins !== undefined ? frame.roll3_pins : null,
+  };
+
+  if (!navigator.onLine) {
+    offlineQueue.push({ type: 'frame', payload, frameRef: { gameId: gs.gameId, frameNum: frame.frameNum } });
+    localStorage.setItem('bt_offline_queue', JSON.stringify(offlineQueue));
+    return;
+  }
+
+  if (frame.frameId) {
+    const { error } = await sb.from('frames').update(payload).eq('id', frame.frameId);
+    if (error) console.error('Frame update error:', error);
+  } else {
+    const { data, error } = await sb.from('frames').upsert(payload, { onConflict: 'game_id,frame_number' }).select().single();
+    if (error) console.error('Frame upsert error:', error);
+    else if (data) frame.frameId = data.id;
+  }
+}
+
+async function saveGameScore(gs) {
+  if (!gs.score) return;
+  if (!navigator.onLine) {
+    offlineQueue.push({ type: 'game_score', gameId: gs.gameId, score: gs.score });
+    localStorage.setItem('bt_offline_queue', JSON.stringify(offlineQueue));
+    return;
+  }
+  await sb.from('games').update({ total_score: gs.score }).eq('id', gs.gameId);
+}
+
+async function syncOfflineGames() {
+  if (!navigator.onLine || !offlineQueue.length) return;
+  const queue = [...offlineQueue];
+  offlineQueue = [];
+  localStorage.setItem('bt_offline_queue', '[]');
+  for (const item of queue) {
+    try {
+      if (item.type === 'frame') {
+        await sb.from('frames').upsert(item.payload, { onConflict: 'game_id,frame_number' });
+      } else if (item.type === 'game_score') {
+        await sb.from('games').update({ total_score: item.score }).eq('id', item.gameId);
+      }
+    } catch(e) {
+      offlineQueue.push(item); // re-queue on failure
+    }
+  }
+  localStorage.setItem('bt_offline_queue', JSON.stringify(offlineQueue));
+  if (!offlineQueue.length) showToast('All games synced!', 'success');
+}
+
+async function finishSession() {
+  currentSession = null;
+  gameStates = [];
+  await loadHomeData();
+  showScreen('home');
+  showToast('Session saved!', 'success');
+}
+
+function abandonGame() {
+  if (gameStates.some(g=>!g.done)) {
+    if (!confirm('Exit current session? Progress will be saved.')) return;
+  }
+  currentSession = null;
+  gameStates = [];
+  showScreen('home');
+}
+
+// ============================================================
+// STATS SCREEN
+// ============================================================
+let statsLeagueId = null;
+
+async function loadStatsScreen() {
+  if (!currentUser) return;
+
+  // Refresh leagues
+  const { data } = await sb.from('leagues').select('*').order('created_at');
+  leagues = data || [];
+
+  const picker = document.getElementById('stats-league-picker');
+  const allPill = `<button class="league-pill ${statsLeagueId===null?'active':''}" onclick="selectStatsLeague(null)">All Leagues</button>`;
+  const leaguePills = leagues.map(lg =>
+    `<button class="league-pill ${statsLeagueId===lg.id?'active':''}" onclick="selectStatsLeague('${lg.id}')">${esc(lg.name)}</button>`
+  ).join('');
+  picker.innerHTML = allPill + leaguePills;
+
+  await renderStatsContent();
+}
+
+async function selectStatsLeague(id) {
+  statsLeagueId = id;
+  // Update pills
+  document.querySelectorAll('.league-pill').forEach((el, i) => {
+    const isAll = i === 0;
+    el.classList.toggle('active', isAll ? id===null : leagues[i-1]?.id === id);
+  });
+  await renderStatsContent();
+}
+
+async function renderStatsContent() {
+  const content = document.getElementById('stats-content');
+  content.innerHTML = '<div class="spinner"></div>';
+
+  // Load games with frames
+  let gamesQuery = sb.from('games')
+    .select('id, total_score, game_number, sessions!inner(id, league_id, date, leagues!inner(user_id, handicap_base, handicap_pct, name))')
+    .eq('sessions.leagues.user_id', currentUser.id)
+    .not('total_score', 'is', null);
+
+  if (statsLeagueId) {
+    gamesQuery = gamesQuery.eq('sessions.league_id', statsLeagueId);
+  }
+
+  const { data: gamesData, error: gamesErr } = await gamesQuery.order('sessions(date)', { ascending: false });
+
+  if (gamesErr) { content.innerHTML = '<div class="empty-state"><div class="es-text">Error loading stats.</div></div>'; return; }
+
+  const games = gamesData || [];
+  const scores = games.map(g=>g.total_score).filter(s=>s!=null);
+
+  if (!scores.length) {
+    content.innerHTML = '<div class="empty-state"><div class="es-icon">🎳</div><div class="es-text">No games recorded yet.</div></div>';
+    return;
+  }
+
+  const avg = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 0;
+  const high = Math.max(...scores);
+  const low  = Math.min(...scores);
+  const league = statsLeagueId ? leagues.find(l=>l.id===statsLeagueId) : null;
+  const handi = league ? calcHandicap(league, avg) : 0;
+
+  // Load frames for pin leave stats
+  const gameIds = games.map(g=>g.id);
+  let frames = [];
+  if (gameIds.length) {
+    const { data: framesData } = await sb.from('frames')
+      .select('*')
+      .in('game_id', gameIds);
+    frames = framesData || [];
+  }
+
+  // Pin leave stats: count which pins were left after roll 1 (non-strike frames)
+  const pinLeaveCounts = {};
+  for (const fr of frames) {
+    if (fr.frame_number > 10) continue;
+    if (fr.roll1 === 10) continue; // strike, no leave
+    // Calculate which pins remain
+    const knocked = new Set(fr.roll1_pins || []);
+    const remaining = [1,2,3,4,5,6,7,8,9,10].filter(p => !knocked.has(p));
+    const key = remaining.sort((a,b)=>a-b).join('-');
+    if (key) {
+      pinLeaveCounts[key] = (pinLeaveCounts[key] || 0) + 1;
+    }
+  }
+
+  // Year-over-year
+  const byYear = {};
+  for (const g of games) {
+    const yr = new Date(g.sessions.date).getFullYear();
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(g.total_score);
+  }
+
+  // Recent games
+  const recentGames = games.slice(0, 10);
+
+  // Build HTML
+  const statsGridHTML = `
+  <div class="stats-grid">
+    <div class="stat-card"><div class="val">${avg}</div><div class="lbl">Average</div></div>
+    <div class="stat-card"><div class="val">${high}</div><div class="lbl">High Game</div></div>
+    <div class="stat-card"><div class="val">${low}</div><div class="lbl">Low Game</div></div>
+    <div class="stat-card"><div class="val">${scores.length}</div><div class="lbl">Games</div></div>
+    ${league ? `<div class="stat-card"><div class="val" style="color:var(--neon2)">${handi}</div><div class="lbl">Handicap</div></div>` : ''}
+    ${league ? `<div class="stat-card"><div class="val" style="color:var(--neon2)">${avg+handi}</div><div class="lbl">H-Avg</div></div>` : ''}
+  </div>`;
+
+  // Pin leaves
+  const sortedLeaves = Object.entries(pinLeaveCounts)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0, 10);
+  const maxLeave = sortedLeaves[0]?.[1] || 1;
+
+  const pinLeaveHTML = sortedLeaves.length ? `
+  <div class="stats-section">
+    <h3>Pin Leave Frequency</h3>
+    <div class="pin-leave-chart">
+      ${sortedLeaves.map(([pins, cnt]) => `
+        <div class="plc-row">
+          <div class="plc-label">Pin${pins.includes('-')?'s':''} ${pins}</div>
+          <div class="plc-bar-wrap">
+            <div class="plc-bar" style="width:${Math.round(cnt/maxLeave*100)}%"></div>
+          </div>
+          <div class="plc-count">${cnt}</div>
+        </div>`).join('')}
+    </div>
+  </div>` : '';
+
+  // Year comparison
+  const years = Object.keys(byYear).sort((a,b)=>b-a);
+  const yearHTML = `
+  <div class="stats-section">
+    <h3>Year-over-Year</h3>
+    <table class="year-table">
+      <thead><tr><th>Year</th><th>Games</th><th>Average</th><th>High</th></tr></thead>
+      <tbody>
+        ${years.map(yr => {
+          const yrScores = byYear[yr];
+          const yrAvg = Math.round(yrScores.reduce((a,b)=>a+b,0)/yrScores.length);
+          const yrHigh = Math.max(...yrScores);
+          return `<tr>
+            <td>${yr}</td>
+            <td>${yrScores.length}</td>
+            <td class="yr-avg">${yrAvg}</td>
+            <td>${yrHigh}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+
+  // Recent games
+  const recentHTML = `
+  <div class="stats-section">
+    <h3>Recent Games</h3>
+    <div class="recent-games">
+      ${recentGames.map(g => {
+        const d = formatDate(g.sessions.date);
+        const lgName = g.sessions.leagues?.name || '';
+        const gh = league ? calcHandicap(league, avg) : 0;
+        return `<div class="rg-row">
+          <div>
+            <div class="rg-date">${d}</div>
+            <div class="small">${lgName ? esc(lgName) + ' · ' : ''}Game ${g.game_number}</div>
+          </div>
+          <div class="rg-scores">
+            <div class="rg-score">${g.total_score}</div>
+            ${league ? `<div class="rg-handi">+${gh}=${g.total_score+gh}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  content.innerHTML = statsGridHTML + pinLeaveHTML + yearHTML + recentHTML;
+}
+
+// ============================================================
+// SETTINGS SCREEN
+// ============================================================
+async function loadSettingsScreen() {
+  if (!currentUser) return;
+  document.getElementById('settings-email').textContent = currentUser.email;
+
+  const { data } = await sb.from('leagues').select('*').order('created_at');
+  leagues = data || [];
+
+  const list = document.getElementById('settings-leagues-list');
+  if (!leagues.length) {
+    list.innerHTML = '<div class="small" style="padding:8px 0;">No leagues yet.</div>';
+    return;
+  }
+  list.innerHTML = leagues.map(lg => `
+    <div class="settings-league-card">
+      <div class="slc-header">
+        <div>
+          <div class="slc-name">${esc(lg.name)}</div>
+          <div class="slc-meta">Base ${lg.handicap_base} · ${lg.handicap_pct}% handicap</div>
+        </div>
+      </div>
+      <div class="slc-actions">
+        <button class="btn-secondary" style="flex:1;padding:8px;" onclick="openEditLeagueModal('${lg.id}')">Edit</button>
+        <button class="btn-danger" onclick="deleteLeague('${lg.id}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function clearLocalCache() {
+  localStorage.removeItem('bt_offline_queue');
+  offlineQueue = [];
+  showToast('Cache cleared', 'success');
+}
+
+// ============================================================
+// HANDICAP ASYNC LOAD FOR GAME SCREEN
+// ============================================================
+async function loadHandicapForActiveGame() {
+  if (!currentSession) return;
+  const league = leagues.find(l=>l.id===currentSession.league_id);
+  if (!league) return;
+  const avg = await getLeagueAverage(league.id);
+  const handi = calcHandicap(league, avg);
+  gameStates.forEach(gs => gs._handi = handi);
+}
+
+// Call when game screen is shown
+const origShowScreen = showScreen;
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async function init() {
+  // Check existing session
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    currentUser = session.user;
+    document.getElementById('bottom-nav').style.display = '';
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      if (s.id === 'screen-auth') s.style.display = 'none';
+    });
+    document.getElementById('screen-home').classList.add('active');
+    document.getElementById('nav-home').classList.add('active');
+    await loadHomeData();
+    await loadHandicapForActiveGame();
+  } else {
+    document.getElementById('bottom-nav').style.display = 'none';
+    showAuthScreen();
+  }
+})();
+
+// Intercept showScreen to load handicap when going to game
+const _showScreen = showScreen;
+window.showScreen = async function(name) {
+  _showScreen(name);
+  if (name === 'game') {
+    await loadHandicapForActiveGame();
+    if (currentSession) renderGameScreen();
+  }
+};
+</script>
+</body>
+</html>
