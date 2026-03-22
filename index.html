@@ -1341,7 +1341,7 @@ function switchAuthTab(tab) {
 async function doGoogleLogin() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: 'https://polite-torte-aecec3.netlify.app' }
+    options: { redirectTo: 'https://enjukueric.github.io/bowltrack' }
   });
   if (error) showToast(error.message, 'error');
 }
