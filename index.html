@@ -2035,8 +2035,8 @@ function renderPinArea(gs) {
     `<div class="pin-row">${row.map(p => {
       let cls = 'pin';
       if (knockedRoll1.has(p)) cls += ' knocked-roll1 disabled';
-      else if (selectedPins.has(p)) cls += ' knocked';
-      else cls += ' standing';
+      else if (selectedPins.has(p)) cls += ' standing';
+      else cls += ' knocked';
       return `<div class="${cls}" onclick="togglePin(${p})" data-pin="${p}">${p}</div>`;
     }).join('')}</div>`
   ).join('');
@@ -2045,11 +2045,10 @@ function renderPinArea(gs) {
 
   return `
   <div class="pin-area">
-    <div class="pin-area-title">${rollLabel} — Tap pins knocked down</div>
+    <div class="pin-area-title">${rollLabel} — Tap pins left standing</div>
     <div class="pin-triangle">${pinsHTML}</div>
     <div class="pin-actions">
       <button class="pin-btn btn-clear" onclick="clearPins()">Clear</button>
-      <button class="pin-btn btn-all-down" onclick="selectAllPins(${JSON.stringify(Array.from(standingPins))})">All Down</button>
       <button class="pin-btn btn-confirm" onclick="confirmRoll()">Confirm →</button>
     </div>
   </div>`;
@@ -2161,7 +2160,26 @@ function selectAllPins(availablePins) {
 async function confirmRoll() {
   const gs = gameStates[activeGameIndex];
   const frame = gs.frames[currentFrame - 1];
-  const pinsDown = Array.from(selectedPins);
+
+  // Compute available (standing) pins for this roll — same logic as renderPinArea
+  let availablePins = new Set([1,2,3,4,5,6,7,8,9,10]);
+  const roll1Pins = frame?.roll1_pins || [];
+  if (currentRoll === 2 && currentFrame < 10) {
+    roll1Pins.forEach(p => availablePins.delete(p));
+  }
+  if (currentFrame === 10) {
+    if (currentRoll === 2 && !isStrike(frame.roll1)) {
+      roll1Pins.forEach(p => availablePins.delete(p));
+    } else if (currentRoll === 3) {
+      const roll2Pins = frame?.roll2_pins || [];
+      if (isStrike(frame.roll1) && !isStrike(frame.roll2)) {
+        roll2Pins.forEach(p => availablePins.delete(p));
+      }
+    }
+  }
+
+  // selectedPins = pins still standing; knocked = available - still standing
+  const pinsDown = Array.from(availablePins).filter(p => !selectedPins.has(p));
   const count = pinsDown.length;
 
   // Validate pin count
