@@ -2043,13 +2043,31 @@ function renderPinArea(gs) {
 
   const maxForThisRoll = getMaxPinsForRoll(gs, frame);
 
+  // Dynamic confirm button label
+  const knockedThisRoll = Array.from(standingPins).filter(p => !selectedPins.has(p)).length;
+  let confirmLabel = 'Confirm →';
+  if (knockedThisRoll === standingPins.size) {
+    if (currentRoll === 1) {
+      confirmLabel = 'Strike! ⚡';
+    } else if (currentFrame < 10 && currentRoll === 2) {
+      confirmLabel = 'Spare! ✓';
+    } else if (currentFrame === 10) {
+      if (currentRoll === 2) confirmLabel = isStrike(frame.roll1) ? 'Strike! ⚡' : 'Spare! ✓';
+      else if (currentRoll === 3) confirmLabel = 'Strike! ⚡';
+    }
+  } else if (currentRoll === 2 && currentFrame < 10) {
+    confirmLabel = 'Missed It';
+  } else if (currentFrame === 10 && currentRoll === 2 && !isStrike(frame.roll1)) {
+    confirmLabel = 'Missed It';
+  }
+
   return `
   <div class="pin-area">
     <div class="pin-area-title">${rollLabel} — Tap pins left standing</div>
     <div class="pin-triangle">${pinsHTML}</div>
     <div class="pin-actions">
       <button class="pin-btn btn-clear" onclick="clearPins()">Clear</button>
-      <button class="pin-btn btn-confirm" onclick="confirmRoll()">Confirm →</button>
+      <button class="pin-btn btn-confirm" onclick="confirmRoll()">${confirmLabel}</button>
     </div>
   </div>`;
 }
