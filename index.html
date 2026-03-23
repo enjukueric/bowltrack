@@ -1426,6 +1426,44 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
 });
 
 // ============================================================
+// ACTIVE SESSION PERSISTENCE (survives phone lock / tab reload)
+// ============================================================
+function saveActiveSessionToStorage() {
+  if (!currentSession) return;
+  try {
+    localStorage.setItem('bt_active_session', JSON.stringify({
+      session:          currentSession,
+      leagueId:         currentLeague ? currentLeague.id : null,
+      gameStates:       gameStates,
+      activeGameIndex:  activeGameIndex
+    }));
+  } catch(e) {}
+}
+
+function clearActiveSessionFromStorage() {
+  localStorage.removeItem('bt_active_session');
+}
+
+function restoreActiveSessionFromStorage() {
+  if (currentSession) return false; // already have one in memory
+  try {
+    const raw = localStorage.getItem('bt_active_session');
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data.session || !data.gameStates) return false;
+    currentSession    = data.session;
+    currentLeague     = data.leagueId ? (leagues.find(l => l.id === data.leagueId) || null) : null;
+    gameStates        = data.gameStates;
+    activeGameIndex   = data.activeGameIndex || 0;
+    recalcPosition(gameStates[activeGameIndex]);
+    return true;
+  } catch(e) {
+    clearActiveSessionFromStorage();
+    return false;
+  }
+}
+
+// ============================================================
 // HOME SCREEN
 // ============================================================
 async function loadHomeData() {
@@ -1436,6 +1474,12 @@ async function loadHomeData() {
   const { data, error } = await sb.from('leagues').select('*').order('created_at');
   if (error) { showToast('Error loading leagues', 'error'); return; }
   leagues = data || [];
+
+  // Restore any in-progress session after a phone lock / reload
+  if (restoreActiveSessionFromStorage()) {
+    showToast('Session restored — resuming where you left off', 'success');
+  }
+
   renderLeagueList();
   await loadHomeStats();
 }
@@ -2143,6 +2187,9 @@ async function confirmRoll() {
   // Save frame to DB
   await saveFrame(gs, frame);
 
+  // Persist in-memory state so phone lock doesn't lose progress
+  saveActiveSessionToStorage();
+
   renderGameScreen();
 }
 
@@ -2389,6 +2436,7 @@ async function syncOfflineGames() {
 }
 
 async function finishSession() {
+  clearActiveSessionFromStorage();
   currentSession = null;
   gameStates = [];
   await loadHomeData();
@@ -2400,6 +2448,7 @@ function abandonGame() {
   if (gameStates.some(g=>!g.done)) {
     if (!confirm('Exit current session? Progress will be saved.')) return;
   }
+  clearActiveSessionFromStorage();
   currentSession = null;
   gameStates = [];
   showScreen('home');
