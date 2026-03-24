@@ -2066,6 +2066,7 @@ function renderPinArea(gs) {
     <div class="pin-area-title">${rollLabel} — Tap pins left standing</div>
     <div class="pin-triangle">${pinsHTML}</div>
     <div class="pin-actions">
+      <button class="pin-btn btn-clear" onclick="undoLastRoll()">Undo</button>
       <button class="pin-btn btn-clear" onclick="clearPins()">Clear</button>
       <button class="pin-btn btn-confirm" onclick="confirmRoll()">${confirmLabel}</button>
     </div>
@@ -2109,7 +2110,51 @@ function renderGameComplete(gs) {
     <div class="gc-score">${score}</div>
     ${league ? `<div class="gc-handi">+ ${handi} handicap = <span>${handiScore}</span></div>` : ''}
     ${nextBtn}
+    <button class="btn-secondary" style="max-width:200px;margin:8px auto 0;font-size:.8rem;" onclick="undoLastRoll()">Undo Last Roll</button>
   </div>`;
+}
+
+// ============================================================
+// UNDO LAST ROLL
+// ============================================================
+async function undoLastRoll() {
+  const gs = gameStates[activeGameIndex];
+  const frames = gs.frames;
+
+  // Find the last roll that was entered (scan backwards)
+  let lastFi = -1, lastRoll = 0;
+  for (let fi = 9; fi >= 0; fi--) {
+    const f = frames[fi];
+    if (fi === 9) {
+      if (f.roll3 !== null) { lastFi = fi; lastRoll = 3; break; }
+      if (f.roll2 !== null) { lastFi = fi; lastRoll = 2; break; }
+      if (f.roll1 !== null) { lastFi = fi; lastRoll = 1; break; }
+    } else {
+      if (f.roll2 !== null && !isStrike(f.roll1)) { lastFi = fi; lastRoll = 2; break; }
+      if (f.roll1 !== null) { lastFi = fi; lastRoll = 1; break; }
+    }
+  }
+
+  if (lastFi === -1) { showToast('Nothing to undo', 'error'); return; }
+
+  // Clear that roll
+  const f = frames[lastFi];
+  if (lastRoll === 3) { f.roll3 = null; f.roll3_pins = null; }
+  else if (lastRoll === 2) { f.roll2 = null; f.roll2_pins = null; }
+  else { f.roll1 = null; f.roll1_pins = null; }
+
+  // Unmark game as done
+  gs.done = false;
+  gs.score = null;
+
+  // Recalculate position from frame data
+  recalcPosition(gs);
+
+  await saveFrame(gs, f);
+  selectedPins.clear();
+  saveActiveSessionToStorage();
+  renderGameScreen();
+  showToast('Last roll undone');
 }
 
 // ============================================================
@@ -2364,45 +2409,46 @@ function getRunningScores(frames) {
 }
 
 function calcMaxPossible(frames) {
-  // Current known score + all strikes for remaining rolls
   const rolls = [];
-  let lastDefinedFrame = -1;
+
   for (let fi = 0; fi < 10; fi++) {
     const f = frames[fi];
-    if (f.roll1 === null) break;
-    lastDefinedFrame = fi;
-    rolls.push(f.roll1);
+    if (f.roll1 === null) break; // frame not started yet
+
     if (fi < 9) {
-      if (!isStrike(f.roll1)) {
-        if (f.roll2 !== null) rolls.push(f.roll2); else rolls.push(null);
+      if (isStrike(f.roll1)) {
+        rolls.push(10);
+      } else {
+        rolls.push(f.roll1);
+        // Best case for pending roll2 is a spare (not 10, which would be impossible)
+        rolls.push(f.roll2 !== null ? f.roll2 : 10 - f.roll1);
       }
     } else {
-      if (f.roll2 !== null) rolls.push(f.roll2); else rolls.push(null);
+      // 10th frame — push all known rolls only
+      rolls.push(f.roll1);
+      if (f.roll2 !== null) rolls.push(f.roll2);
       if (f.roll3 !== null) rolls.push(f.roll3);
     }
   }
 
-  // Fill remaining with 10s
-  const filled = rolls.map(r => r === null ? 10 : r);
-  // Add remaining rolls as strikes
-  const totalRolls = 12; // max rolls in a 300 game representation
-  while (filled.length < totalRolls) filled.push(10);
+  // Pad with 10s (best case for remaining rolls) — use 21 to cover all open-frame scenarios
+  while (rolls.length < 21) rolls.push(10);
 
-  // Calculate score from this filled array
+  // Calculate score
   let score = 0, ri = 0;
   for (let fi = 0; fi < 10; fi++) {
     if (fi === 9) {
-      score += (filled[ri]||0) + (filled[ri+1]||0) + (filled[ri+2]||0);
+      score += (rolls[ri]||0) + (rolls[ri+1]||0) + (rolls[ri+2]||0);
       break;
     }
-    if (filled[ri] === 10) {
-      score += 10 + (filled[ri+1]||0) + (filled[ri+2]||0);
+    if (rolls[ri] === 10) {
+      score += 10 + (rolls[ri+1]||0) + (rolls[ri+2]||0);
       ri++;
-    } else if ((filled[ri]||0)+(filled[ri+1]||0) === 10) {
-      score += 10 + (filled[ri+2]||0);
+    } else if ((rolls[ri]||0) + (rolls[ri+1]||0) === 10) {
+      score += 10 + (rolls[ri+2]||0);
       ri += 2;
     } else {
-      score += (filled[ri]||0) + (filled[ri+1]||0);
+      score += (rolls[ri]||0) + (rolls[ri+1]||0);
       ri += 2;
     }
   }
