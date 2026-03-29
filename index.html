@@ -1125,6 +1125,70 @@ select option { background: var(--bg2); }
   border-radius: 50%;
 }
 
+/* ── Public Profile Screen ── */
+#screen-profile { padding: 0; }
+.profile-screen-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 10;
+}
+.profile-back-btn {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--neon); font-size: .9rem; font-weight: 600; padding: 4px 8px;
+}
+.profile-hero {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 32px 24px 24px; text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.profile-avatar-lg {
+  width: 88px; height: 88px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon3), var(--neon));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem; font-weight: 700; color: #000; margin-bottom: 14px;
+  box-shadow: 0 0 24px rgba(0,229,255,.3);
+}
+.profile-full-name { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+.profile-handle { font-size: .85rem; color: var(--text2); margin-bottom: 14px; }
+.profile-hero-btns { display: flex; gap: 10px; margin-top: 4px; }
+.profile-share-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 16px; border-radius: 20px;
+  background: var(--bg3); border: 1px solid var(--border);
+  font-size: .82rem; color: var(--text2); font-weight: 600;
+  transition: border-color .2s;
+}
+.profile-share-btn:hover { border-color: var(--neon); color: var(--text); }
+
+.profile-stats-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px; padding: 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.profile-stat-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 8px; text-align: center;
+}
+.profile-stat-val { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.profile-stat-lbl { font-size: .68rem; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; margin-top: 6px; }
+
+.profile-section-title {
+  font-size: .75rem; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .08em; padding: 16px 16px 10px;
+}
+.profile-session-card {
+  margin: 0 16px 10px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+}
+.profile-session-meta { font-size: .8rem; color: var(--text2); margin-bottom: 10px; }
+.profile-session-scores { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Make feed names/avatars tappable */
+.feed-name-btn { cursor: pointer; }
+.feed-name-btn:hover { text-decoration: underline; }
+
 /* Notification badge on nav */
 #nav-friends { position: relative; }
 .nav-badge {
@@ -1303,6 +1367,10 @@ select option { background: var(--bg2); }
             <div class="user-email" id="settings-email">—</div>
             <button class="btn-logout" onclick="doLogout()">Sign Out</button>
           </div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn-secondary" style="flex:1;" onclick="openEditProfile()">Edit Name</button>
+            <button class="btn-secondary" style="flex:1;" onclick="openProfile(currentUser.id, 'settings')">My Profile</button>
+          </div>
         </div>
 
         <div class="settings-section">
@@ -1319,6 +1387,19 @@ select option { background: var(--bg2); }
       </div>
     </div>
 
+
+    <!-- PROFILE SCREEN -->
+    <div id="screen-profile" class="screen">
+      <div class="profile-screen-header">
+        <button class="profile-back-btn" onclick="closeProfile()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><polyline points="15 18 9 12 15 6"/></svg>
+          Back
+        </button>
+        <span style="font-weight:600;font-size:.95rem;">Profile</span>
+        <div style="width:60px"></div>
+      </div>
+      <div id="profile-content"><div class="feed-empty">Loading…</div></div>
+    </div>
 
     <!-- FRIENDS SCREEN -->
     <div id="screen-friends" class="screen">
@@ -1551,7 +1632,11 @@ sb.auth.onAuthStateChange((event, session) => {
     showScreen('home');
     document.getElementById('bottom-nav').style.display = '';
     loadHomeData();
-    loadMyProfile().then(() => checkNotifBadge());
+    loadMyProfile().then(() => {
+      checkNotifBadge();
+      document.getElementById('home-subtitle').textContent = myProfile?.full_name || currentUser.email;
+      checkProfileDeepLink();
+    });
   } else {
     currentUser = null;
     showAuthScreen();
@@ -1704,7 +1789,7 @@ function restoreActiveSessionFromStorage() {
 // ============================================================
 async function loadHomeData() {
   if (!currentUser) return;
-  document.getElementById('home-subtitle').textContent = currentUser.email;
+  document.getElementById('home-subtitle').textContent = myProfile?.full_name || currentUser.email;
   document.getElementById('settings-email').textContent = currentUser.email;
 
   const { data, error } = await sb.from('leagues').select('*').order('created_at');
@@ -3188,6 +3273,157 @@ function formatDate(dateStr) {
 })();
 
 // ============================================================
+// PUBLIC PROFILES
+// ============================================================
+
+let currentProfileUserId = null;
+let profileReturnScreen = 'friends';
+
+async function openProfile(userId, returnTo) {
+  if (!userId) return;
+  currentProfileUserId = userId;
+  profileReturnScreen = returnTo || friendsTabActive && 'friends' || 'friends';
+  _showScreen('profile');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  await loadProfileScreen(userId);
+}
+
+function closeProfile() {
+  showScreen(profileReturnScreen);
+}
+
+async function loadProfileScreen(userId) {
+  const el = document.getElementById('profile-content');
+  el.innerHTML = '<div class="feed-empty">Loading…</div>';
+  const isOwn = userId === currentUser?.id;
+
+  const [{ data: profile }, { data: sessions }] = await Promise.all([
+    sb.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+    sb.from('sessions')
+      .select('*, games(id, game_number, total_score)')
+      .eq('user_id', userId)
+      .order('date', { ascending: false })
+      .limit(10)
+  ]);
+
+  if (!profile) {
+    el.innerHTML = '<div class="feed-empty">Profile not found.</div>';
+    return;
+  }
+
+  const allGames = (sessions || [])
+    .flatMap(s => (s.games || []).filter(g => g.total_score != null));
+  const avg  = allGames.length ? Math.round(allGames.reduce((s,g) => s + g.total_score, 0) / allGames.length) : null;
+  const high = allGames.length ? Math.max(...allGames.map(g => g.total_score)) : null;
+  const isFollowing = followingSet.has(userId);
+
+  const profileUrl = `${location.origin}${location.pathname}?profile=${userId}`;
+
+  const heroHtml = `
+    <div class="profile-hero">
+      <div class="profile-avatar-lg">${getInitials(profile.full_name)}</div>
+      <div class="profile-full-name">${escHtml(profile.full_name)}</div>
+      <div class="profile-hero-btns">
+        ${isOwn
+          ? `<button class="btn-secondary" onclick="openEditProfile()" style="padding:9px 20px;font-size:.85rem;">Edit Name</button>`
+          : `<button class="follow-btn ${isFollowing ? 'following' : ''}" id="profile-follow-btn"
+               onclick="toggleProfileFollow('${userId}')" style="padding:10px 28px;">
+               ${isFollowing ? 'Following' : 'Follow'}
+             </button>`}
+        <button class="profile-share-btn" onclick="shareProfileUrl('${profileUrl}','${escHtml(profile.full_name)}')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
+      </div>
+    </div>`;
+
+  const statsHtml = avg !== null ? `
+    <div class="profile-stats-grid">
+      <div class="profile-stat-card">
+        <div class="profile-stat-val">${allGames.length}</div>
+        <div class="profile-stat-lbl">Games</div>
+      </div>
+      <div class="profile-stat-card">
+        <div class="profile-stat-val" style="color:var(--neon)">${avg}</div>
+        <div class="profile-stat-lbl">Average</div>
+      </div>
+      <div class="profile-stat-card">
+        <div class="profile-stat-val" style="color:var(--strike)">${high}</div>
+        <div class="profile-stat-lbl">High Game</div>
+      </div>
+    </div>` : '';
+
+  const sessHtml = (sessions || []).map(s => {
+    const games = (s.games || []).filter(g => g.total_score != null).sort((a,b) => a.game_number - b.game_number);
+    if (!games.length) return '';
+    const label = s.session_type === 'practice' ? 'Practice' : 'League';
+    return `<div class="profile-session-card">
+      <div class="profile-session-meta">${label} · ${getTimeAgo(s.date)}</div>
+      <div class="profile-session-scores">
+        ${games.map(g => `
+          <div class="feed-game ${g.total_score >= 200 ? 'great' : ''}">
+            <span class="g-label">G${g.game_number}</span>
+            <span class="g-score">${g.total_score}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  const sessionSection = sessHtml
+    ? `<div class="profile-section-title">Recent Sessions</div>${sessHtml}`
+    : `<div class="feed-empty" style="padding:32px;">No sessions yet.</div>`;
+
+  const privacyNote = !isOwn && !isFollowing && !allGames.length
+    ? `<div style="text-align:center;padding:16px;font-size:.82rem;color:var(--text2);">Follow ${escHtml(profile.full_name)} to see their scores.</div>`
+    : '';
+
+  el.innerHTML = heroHtml + statsHtml + privacyNote + sessionSection;
+}
+
+async function toggleProfileFollow(userId) {
+  const btn = document.getElementById('profile-follow-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  if (followingSet.has(userId)) {
+    await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
+    followingSet.delete(userId);
+    btn.textContent = 'Follow';
+    btn.classList.remove('following');
+    // Reload to hide private sessions
+    await loadProfileScreen(userId);
+  } else {
+    await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
+    followingSet.add(userId);
+    btn.textContent = 'Following';
+    btn.classList.add('following');
+    await loadProfileScreen(userId);
+  }
+  btn.disabled = false;
+}
+
+async function shareProfileUrl(url, name) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: `${name} on Bowl Track`, url });
+      return;
+    } catch(e) { if (e.name === 'AbortError') return; }
+  }
+  await navigator.clipboard.writeText(url);
+  showToast('Profile link copied!', 'success');
+}
+
+function openEditProfile() {
+  document.getElementById('profile-name-input').value = myProfile?.full_name || '';
+  openModal('modal-profile');
+}
+
+// Detect ?profile=USER_ID in URL and open after login
+function checkProfileDeepLink() {
+  const uid = new URLSearchParams(location.search).get('profile');
+  if (uid) openProfile(uid, 'home');
+}
+
+// ============================================================
 // SHARE SCORE CARD
 // ============================================================
 
@@ -3649,10 +3885,10 @@ function renderFeedCard(session, profile, reactions, commentCount) {
   const commentLabel = commentCount > 0 ? `💬 ${commentCount}` : '💬';
 
   return `<div class="feed-card">
-    <div class="feed-header">
+    <div class="feed-header" onclick="openProfile('${session.user_id}')" style="cursor:pointer;">
       <div class="feed-avatar">${getInitials(name)}</div>
       <div class="feed-meta">
-        <div class="feed-name">${escHtml(name)}</div>
+        <div class="feed-name feed-name-btn">${escHtml(name)}</div>
         <div class="feed-time">${escHtml(label)} · ${getTimeAgo(session.date)}</div>
       </div>
     </div>
@@ -3800,8 +4036,8 @@ async function loadPeopleTab() {
 
 function renderPersonCard(profile, isFollowing) {
   return `<div class="person-card">
-    <div class="feed-avatar">${getInitials(profile.full_name)}</div>
-    <div class="person-card-name">${escHtml(profile.full_name)}</div>
+    <div class="feed-avatar" onclick="openProfile('${profile.user_id}')" style="cursor:pointer;">${getInitials(profile.full_name)}</div>
+    <div class="person-card-name feed-name-btn" onclick="openProfile('${profile.user_id}')" style="cursor:pointer;">${escHtml(profile.full_name)}</div>
     <button class="follow-btn ${isFollowing ? 'following' : ''}"
       onclick="toggleFollow('${profile.user_id}',this)">${isFollowing ? 'Following' : 'Follow'}</button>
   </div>`;
