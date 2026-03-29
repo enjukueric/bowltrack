@@ -1,0 +1,30 @@
+name: Bowl Track Push Notifications
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # every 10 minutes
+  workflow_dispatch:         # allow manual runs
+
+jobs:
+  send-pushes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pywebpush requests
+
+      - name: Write VAPID private key
+        run: echo "$VAPID_PEM" > vapid_private.pem
+        env:
+          VAPID_PEM: ${{ secrets.VAPID_PEM }}
+
+      - name: Send push notifications
+        run: python send_bowling_pushes.py
+        env:
+          BOWL_SVC_KEY: ${{ secrets.BOWL_SVC_KEY }}
+          LOOKBACK_MINUTES: '12'
