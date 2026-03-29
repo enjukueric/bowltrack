@@ -2867,6 +2867,53 @@ async function renderStatsContent() {
     }
   }
 
+  // ── Spare conversion stats ──────────────────────────────────
+  const PIN_ADJ = {
+    1:[2,3], 2:[1,4,5], 3:[1,5,6],
+    4:[2,7,8], 5:[2,3,8,9], 6:[3,9,10],
+    7:[4,8], 8:[4,5,7,9], 9:[5,6,8,10], 10:[6,9]
+  };
+
+  function isSplit(remaining) {
+    // Split: headpin (1) down, 2+ pins remain, not all connected via adjacency
+    if (remaining.length < 2 || remaining.includes(1)) return false;
+    const set = new Set(remaining);
+    const visited = new Set();
+    const queue = [remaining[0]];
+    while (queue.length) {
+      const pin = queue.pop();
+      if (visited.has(pin)) continue;
+      visited.add(pin);
+      for (const adj of PIN_ADJ[pin] || []) {
+        if (set.has(adj)) queue.push(adj);
+      }
+    }
+    return visited.size < remaining.length;
+  }
+
+  // per-leave: { attempts, made }
+  const leaveStats = {};
+  let spTotal = 0, spMade = 0;
+  let spSingle = {a:0,m:0}, spMulti = {a:0,m:0}, spSplit = {a:0,m:0};
+
+  for (const fr of frames) {
+    if (fr.frame_number > 9) continue; // only frames 1-9 for clean spare tracking
+    if (fr.roll1 === 10) continue; // strike
+    const knocked = new Set(fr.roll1_pins || []);
+    const remaining = [1,2,3,4,5,6,7,8,9,10].filter(p => !knocked.has(p));
+    if (!remaining.length) continue; // shouldn't happen
+    const key = remaining.join('-');
+    if (!leaveStats[key]) leaveStats[key] = { attempts: 0, made: 0, remaining };
+    leaveStats[key].attempts++;
+    spTotal++;
+    const made = (fr.roll1 ?? 0) + (fr.roll2 ?? 0) === 10;
+    if (made) { leaveStats[key].made++; spMade++; }
+    const split = isSplit(remaining);
+    if (remaining.length === 1) { spSingle.a++; if (made) spSingle.m++; }
+    else if (split)             { spSplit.a++;  if (made) spSplit.m++;  }
+    else                        { spMulti.a++;  if (made) spMulti.m++;  }
+  }
+
   // Year-over-year
   const byYear = {};
   for (const g of games) {
@@ -2956,7 +3003,97 @@ async function renderStatsContent() {
     </div>
   </div>`;
 
-  content.innerHTML = statsGridHTML + pinLeaveHTML + yearHTML + recentHTML;
+  // ── Spare conversion HTML ───────────────────────────────────
+  const pct = n => n.a ? Math.round(n.m / n.a * 100) : null;
+  const pctBar = (m, a) => {
+    if (!a) return '<span style="color:var(--text2);font-size:.8rem;">No data</span>';
+    const p = Math.round(m / a * 100);
+    const color = p >= 80 ? 'var(--success)' : p >= 60 ? 'var(--neon)' : p >= 40 ? 'var(--neon2)' : 'var(--danger)';
+    return `<div style="display:flex;align-items:center;gap:8px;width:100%;">
+      <div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;">
+        <div style="width:${p}%;height:100%;background:${color};border-radius:4px;transition:width .4s;"></div>
+      </div>
+      <span style="font-size:.8rem;color:${color};min-width:36px;text-align:right;">${p}%</span>
+    </div>`;
+  };
+
+  const overallPct = spTotal ? Math.round(spMade / spTotal * 100) : null;
+  const overallColor = overallPct >= 80 ? 'var(--success)' : overallPct >= 60 ? 'var(--neon)' : overallPct >= 40 ? 'var(--neon2)' : 'var(--danger)';
+
+  // Per-leave sorted by attempts desc, show top 12
+  const sortedLeaveStats = Object.entries(leaveStats)
+    .sort((a,b) => b[1].attempts - a[1].attempts)
+    .slice(0, 12);
+
+  // Splits separate
+  const splitLeaves = Object.entries(leaveStats)
+    .filter(([k, v]) => isSplit(v.remaining))
+    .sort((a,b) => b[1].attempts - a[1].attempts);
+
+  const spareHTML = spTotal === 0 ? '' : `
+  <div class="stats-section">
+    <h3>Spare Conversions</h3>
+
+    <div style="display:flex;align-items:center;gap:16px;padding:16px;background:var(--bg3);border-radius:var(--radius);margin-bottom:16px;">
+      <div style="font-size:3rem;font-weight:700;color:${overallColor};line-height:1;">${overallPct}%</div>
+      <div>
+        <div style="font-weight:600;">Overall Spare Rate</div>
+        <div style="font-size:.8rem;color:var(--text2);">${spMade} of ${spTotal} spares (frames 1–9)</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:20px;">
+      ${[
+        ['Single Pin', spSingle],
+        ['Multi-Pin', spMulti],
+        ['Splits', spSplit]
+      ].map(([label, s]) => {
+        const p = pct(s);
+        const c = p === null ? 'var(--text2)' : p >= 80 ? 'var(--success)' : p >= 60 ? 'var(--neon)' : p >= 40 ? 'var(--neon2)' : 'var(--danger)';
+        return `<div style="background:var(--bg3);border-radius:10px;padding:12px;text-align:center;">
+          <div style="font-size:1.5rem;font-weight:700;color:${c};">${p !== null ? p + '%' : '—'}</div>
+          <div style="font-size:.7rem;color:var(--text2);margin-top:2px;">${label}</div>
+          ${s.a ? `<div style="font-size:.7rem;color:var(--text2);">${s.m}/${s.a}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="font-size:.75rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">By Leave Type</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      ${sortedLeaveStats.map(([key, s]) => {
+        const split = isSplit(s.remaining);
+        const tag = s.remaining.length === 1 ? '' : split
+          ? '<span style="font-size:.65rem;background:rgba(255,107,53,.2);color:var(--neon2);border-radius:4px;padding:1px 5px;margin-left:4px;">SPLIT</span>'
+          : '';
+        return `<div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:.85rem;font-weight:600;">Pin${key.includes('-')?'s':''} ${key}${tag}</span>
+            <span style="font-size:.75rem;color:var(--text2);">${s.made}/${s.attempts}</span>
+          </div>
+          ${pctBar(s.made, s.attempts)}
+        </div>`;
+      }).join('')}
+    </div>
+
+    ${splitLeaves.length ? `
+    <div style="margin-top:20px;">
+      <div style="font-size:.75rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Splits Faced</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${splitLeaves.map(([key, s]) => `
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <span style="font-size:.85rem;font-weight:600;">${key}
+              <span style="font-size:.65rem;background:rgba(255,107,53,.2);color:var(--neon2);border-radius:4px;padding:1px 5px;margin-left:4px;">SPLIT</span>
+            </span>
+            <span style="font-size:.75rem;color:var(--text2);">${s.made}/${s.attempts}</span>
+          </div>
+          ${pctBar(s.made, s.attempts)}
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+  </div>`;
+
+  content.innerHTML = statsGridHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
 }
 
 // ============================================================
