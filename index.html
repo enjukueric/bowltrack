@@ -1303,11 +1303,16 @@ select option { background: var(--bg2); }
     <div id="screen-friends" class="screen">
       <div class="friends-tabs">
         <button class="friends-tab active" data-tab="feed" onclick="switchFriendsTab('feed')">Feed</button>
+        <button class="friends-tab" data-tab="notifs" onclick="switchFriendsTab('notifs')" id="notifs-tab">Activity</button>
         <button class="friends-tab" data-tab="people" onclick="switchFriendsTab('people')">Friends</button>
       </div>
       <div id="friends-feed-view">
         <div id="feed-list"><div class="feed-empty">Loading…</div></div>
       </div>
+      <div id="friends-notifs-view" style="display:none">
+        <div id="notifs-list"><div class="feed-empty">Loading…</div></div>
+      </div>
+
       <div id="friends-people-view" style="display:none">
         <div class="people-search">
           <input type="text" id="people-search-input" placeholder="Search by full name…"
@@ -3023,7 +3028,7 @@ function formatDate(dateStr) {
 
 // Paste your VAPID public key here after running generate_vapid_keys.py
 // Leave empty to skip push notifications
-const VAPID_PUBLIC_KEY = '';
+const VAPID_PUBLIC_KEY = 'BDh30uluTSZoIjIsH73FOPvKaxU7BO2Vv3yg-PJ7uvmbBS9zXjDNmrn0oCp6SDVSFBoo6tIuU7azPQLcBG8BlBw';
 
 let myProfile = null;
 let feedFollowingIds = [];
@@ -3096,9 +3101,65 @@ function switchFriendsTab(tab) {
   friendsTabActive = tab;
   document.querySelectorAll('.friends-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.getElementById('friends-feed-view').style.display = tab === 'feed' ? '' : 'none';
+  document.getElementById('friends-notifs-view').style.display = tab === 'notifs' ? '' : 'none';
   document.getElementById('friends-people-view').style.display = tab === 'people' ? '' : 'none';
   if (tab === 'feed') loadFeed();
+  else if (tab === 'notifs') loadNotifs();
   else loadPeopleTab();
+}
+
+async function loadNotifs() {
+  const el = document.getElementById('notifs-list');
+  if (!el) return;
+  el.innerHTML = '<div class="feed-empty">Loading…</div>';
+
+  // Get my session IDs
+  const { data: mySessions } = await sb.from('sessions').select('id, date, session_type').eq('user_id', currentUser.id).order('date', { ascending: false }).limit(100);
+  if (!mySessions?.length) {
+    el.innerHTML = '<div class="feed-empty">Bowl some games first!</div>';
+    return;
+  }
+  const sessionIds = mySessions.map(s => s.id);
+  const sessionMap = {};
+  mySessions.forEach(s => sessionMap[s.id] = s);
+
+  // Get reactions and comments on my sessions by others
+  const [{ data: reactions }, { data: comments }] = await Promise.all([
+    sb.from('reactions').select('*').eq('target_type', 'session').in('target_id', sessionIds).neq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(50),
+    sb.from('comments').select('*').eq('target_type', 'session').in('target_id', sessionIds).neq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(50)
+  ]);
+
+  const allActivity = [
+    ...(reactions || []).map(r => ({ ...r, kind: 'reaction' })),
+    ...(comments || []).map(c => ({ ...c, kind: 'comment' }))
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+  if (!allActivity.length) {
+    el.innerHTML = '<div class="feed-empty">No activity on your sessions yet.<br><br>Share the app with friends!</div>';
+    return;
+  }
+
+  // Load profiles for actors
+  const actorIds = [...new Set(allActivity.map(a => a.user_id))];
+  const { data: profiles } = await sb.from('profiles').select('user_id, full_name').in('user_id', actorIds);
+  const pm = {};
+  (profiles || []).forEach(p => pm[p.user_id] = p.full_name);
+
+  el.innerHTML = allActivity.map(a => {
+    const name = pm[a.user_id] || 'Someone';
+    const session = sessionMap[a.target_id];
+    const sessionLabel = session ? `${session.session_type === 'practice' ? 'Practice' : 'League'} · ${getTimeAgo(session.date)}` : '';
+    const body = a.kind === 'reaction'
+      ? `reacted ${a.emoji} to your session`
+      : `commented: <em>${escHtml(a.content)}</em>`;
+    return `<div class="person-card" style="align-items:flex-start;gap:10px;">
+      <div class="feed-avatar" style="margin-top:2px;">${getInitials(name)}</div>
+      <div style="flex:1">
+        <div style="font-size:.9rem;"><strong>${escHtml(name)}</strong> ${body}</div>
+        <div style="font-size:.75rem;color:var(--text2);margin-top:4px;">${sessionLabel} · ${getTimeAgo(a.created_at)}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function loadFriendsScreen() {
@@ -3423,6 +3484,7 @@ function clearNotifBadge() {
   lastSeenNotifAt = new Date().toISOString();
   localStorage.setItem('bt_last_notif', lastSeenNotifAt);
   document.querySelector('#nav-friends .nav-badge')?.remove();
+  document.getElementById('notifs-tab')?.classList.remove('has-notif');
 }
 
 // ── Push notifications ────────────────────────────────────────
