@@ -954,6 +954,166 @@ select option { background: var(--bg2); }
   color: var(--text2);
   font-size: .9rem;
 }
+
+/* ============================================================
+   SOCIAL / FRIENDS
+   ============================================================ */
+#screen-friends { padding: 0; }
+
+.friends-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg2);
+  position: sticky; top: 0; z-index: 10;
+}
+.friends-tab {
+  flex: 1; padding: 14px;
+  font-size: .85rem; font-weight: 600;
+  color: var(--text2);
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.friends-tab.active { color: var(--neon); border-bottom-color: var(--neon); }
+
+#friends-feed-view { padding: 12px; }
+#friends-people-view { padding: 16px; }
+
+.feed-empty {
+  text-align: center; padding: 48px 24px;
+  color: var(--text2); font-size: .9rem; line-height: 1.6;
+}
+
+.feed-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.feed-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px 10px;
+}
+.feed-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--neon3), var(--neon));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .9rem; color: #000; flex-shrink: 0;
+}
+.feed-name { font-weight: 600; font-size: .95rem; }
+.feed-time { font-size: .75rem; color: var(--text2); margin-top: 2px; }
+
+.feed-scores {
+  display: flex; gap: 8px; padding: 10px 16px;
+  flex-wrap: wrap; align-items: center;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.feed-game {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg3); border-radius: 8px; padding: 8px 12px;
+  min-width: 52px; border: 1px solid transparent; transition: border-color .2s;
+}
+.feed-game.great { border-color: rgba(255,215,0,.4); }
+.feed-game .g-label { font-size: .65rem; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; }
+.feed-game .g-score { font-size: 1.1rem; font-weight: 700; }
+.feed-game.great .g-score { color: var(--strike); }
+.feed-avg {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(0,229,255,.08); border-radius: 8px; padding: 8px 12px;
+  min-width: 52px; border: 1px solid rgba(0,229,255,.2);
+}
+.feed-avg .g-label { font-size: .65rem; color: var(--neon); text-transform: uppercase; letter-spacing: .05em; }
+.feed-avg .g-score { font-size: 1.1rem; font-weight: 700; color: var(--neon); }
+
+.feed-actions {
+  display: flex; align-items: center; gap: 4px; padding: 10px 12px;
+}
+.reaction-bar { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+.reaction-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 10px; border-radius: 20px;
+  background: var(--bg3); border: 1px solid var(--border);
+  font-size: .85rem; transition: all .15s; cursor: pointer;
+}
+.reaction-btn.mine {
+  background: rgba(0,229,255,.12);
+  border-color: var(--neon);
+}
+.reaction-btn .r-count { font-size: .75rem; color: var(--text2); min-width: 8px; }
+.reaction-btn.mine .r-count { color: var(--neon); }
+
+.comment-trigger-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 20px;
+  background: var(--bg3); border: 1px solid var(--border);
+  font-size: .8rem; color: var(--text2); transition: border-color .2s; white-space: nowrap;
+}
+.comment-trigger-btn:hover { border-color: var(--neon); color: var(--text); }
+
+.comments-preview { padding: 0 16px 12px; }
+.comment-preview-item {
+  font-size: .82rem; padding: 6px 0;
+  border-top: 1px solid var(--border); color: var(--text2);
+  display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden;
+}
+.comment-preview-item strong { color: var(--text); }
+
+/* People tab */
+.people-search { display: flex; gap: 8px; margin-bottom: 20px; }
+.people-search input { flex: 1; }
+.people-search button {
+  padding: 12px 16px; background: var(--neon); color: #000;
+  font-weight: 600; border-radius: 8px; white-space: nowrap;
+}
+.people-section-title {
+  font-size: .75rem; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: .08em; margin: 16px 0 8px;
+}
+.person-card {
+  display: flex; align-items: center; gap: 12px; padding: 12px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 8px;
+}
+.person-card .feed-avatar { width: 36px; height: 36px; font-size: .8rem; }
+.person-card-name { flex: 1; font-weight: 600; font-size: .9rem; }
+.follow-btn {
+  padding: 8px 16px; border-radius: 20px;
+  font-size: .8rem; font-weight: 600;
+  border: 1px solid var(--neon); color: var(--neon); transition: all .15s;
+}
+.follow-btn.following { border-color: var(--border); color: var(--text2); }
+
+/* Comments modal */
+#modal-comments .modal { max-height: 85vh; display: flex; flex-direction: column; }
+.comments-list { flex: 1; overflow-y: auto; margin-bottom: 12px; max-height: 50vh; }
+.comment-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.comment-item .feed-avatar { width: 32px; height: 32px; font-size: .75rem; flex-shrink: 0; }
+.comment-item-body { flex: 1; }
+.comment-author { font-size: .82rem; font-weight: 600; }
+.comment-text { font-size: .85rem; color: var(--text2); margin-top: 2px; word-break: break-word; }
+.comment-age { font-size: .7rem; color: var(--text2); margin-top: 2px; }
+.comment-input-row { display: flex; gap: 8px; }
+.comment-input-row input { flex: 1; padding: 10px 12px; }
+.comment-input-row button {
+  padding: 10px 16px; background: var(--neon); color: #000;
+  font-weight: 700; border-radius: 8px;
+}
+
+/* Profile modal */
+.modal-note { font-size: .85rem; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+
+/* Notification badge on nav */
+#nav-friends { position: relative; }
+.nav-badge {
+  position: absolute; top: 6px; right: 10px;
+  background: var(--danger); color: #fff;
+  font-size: .6rem; font-weight: 700;
+  min-width: 16px; height: 16px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+}
 </style>
 </head>
 <body>
@@ -1138,6 +1298,30 @@ select option { background: var(--bg2); }
       </div>
     </div>
 
+
+    <!-- FRIENDS SCREEN -->
+    <div id="screen-friends" class="screen">
+      <div class="friends-tabs">
+        <button class="friends-tab active" data-tab="feed" onclick="switchFriendsTab('feed')">Feed</button>
+        <button class="friends-tab" data-tab="people" onclick="switchFriendsTab('people')">Friends</button>
+      </div>
+      <div id="friends-feed-view">
+        <div id="feed-list"><div class="feed-empty">Loading…</div></div>
+      </div>
+      <div id="friends-people-view" style="display:none">
+        <div class="people-search">
+          <input type="text" id="people-search-input" placeholder="Search by full name…"
+            onkeydown="if(event.key==='Enter')searchPeople()">
+          <button onclick="searchPeople()">Search</button>
+        </div>
+        <div id="people-search-results"></div>
+        <div class="people-section-title">Following</div>
+        <div id="following-list"></div>
+        <div class="people-section-title">Followers</div>
+        <div id="followers-list"></div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 
   <!-- BOTTOM NAV -->
@@ -1159,6 +1343,13 @@ select option { background: var(--bg2); }
         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
       </svg>
       Stats
+    </button>
+    <button class="nav-btn" id="nav-friends" onclick="showScreen('friends')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      Friends
     </button>
     <button class="nav-btn" id="nav-settings" onclick="showScreen('settings')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1220,6 +1411,36 @@ select option { background: var(--bg2); }
   </div>
 </div>
 
+<!-- MODAL: Profile Setup -->
+<div class="modal-overlay" id="modal-profile">
+  <div class="modal">
+    <h3>Set Your Name</h3>
+    <p class="modal-note">Your full name lets friends find and follow you. Only visible to other Bowl Track users.</p>
+    <div class="form-group">
+      <label>Full Name</label>
+      <input type="text" id="profile-name-input" placeholder="Jane Smith" maxlength="60"
+        onkeydown="if(event.key==='Enter')saveProfile()">
+    </div>
+    <button class="btn-primary" onclick="saveProfile()">Save</button>
+  </div>
+</div>
+
+<!-- MODAL: Comments -->
+<div class="modal-overlay" id="modal-comments">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 id="comments-modal-title">Comments</h3>
+      <button onclick="closeModal('modal-comments')" style="font-size:1.2rem;color:var(--text2);padding:4px 8px;">✕</button>
+    </div>
+    <div class="comments-list" id="comments-list"></div>
+    <div class="comment-input-row">
+      <input type="text" id="comment-input" placeholder="Add a comment…" maxlength="280"
+        onkeydown="if(event.key==='Enter')submitComment()">
+      <button onclick="submitComment()">Post</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -1250,28 +1471,16 @@ const MANIFEST = {
 const blob = new Blob([JSON.stringify(MANIFEST)], {type: 'application/json'});
 document.getElementById('pwa-manifest').href = URL.createObjectURL(blob);
 
-// Register service worker inline
+// Register service worker (sw.js must be uploaded alongside index.html)
 if ('serviceWorker' in navigator) {
-  const swCode = `
-const CACHE = 'bowltrack-v1';
-const URLS = [self.location.href.replace('/bowling_tracker_sw.js','')];
-self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll([]))); self.skipWaiting(); });
-self.addEventListener('activate', e => { e.waitUntil(clients.claim()); });
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  if (e.request.url.includes('supabase')) return; // never cache API calls
-  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
-});
-  `;
-  const swBlob = new Blob([swCode], {type: 'text/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(()=>{});
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
 // ============================================================
 // SUPABASE INIT
 // ============================================================
-const SUPA_URL = 'https://mzjicrhoyftmzeqqjzbj.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amljcmhveWZ0bXplcXFqemJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTA2MjIsImV4cCI6MjA4OTY2NjYyMn0.AnCmuMZQhvBg_vU5tx4oaNo18eJdieX02d4uawfeEI0';
+const SUPA_URL = 'https://sfeulocgtduxcxvjppbj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNmZXVsb2NndGR1eGN4dmpwcGJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwOTA1OTksImV4cCI6MjA4OTY2NjU5OX0.RfNl_WkJGoLczbVbXl0xxtfhSYopuWzGmbzCQU9uJa4';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ============================================================
@@ -1316,6 +1525,7 @@ sb.auth.onAuthStateChange((event, session) => {
     showScreen('home');
     document.getElementById('bottom-nav').style.display = '';
     loadHomeData();
+    loadMyProfile().then(() => checkNotifBadge());
   } else {
     currentUser = null;
     showAuthScreen();
@@ -2807,6 +3017,448 @@ function formatDate(dateStr) {
   }
 })();
 
+// ============================================================
+// SOCIAL / FRIENDS
+// ============================================================
+
+// Paste your VAPID public key here after running generate_vapid_keys.py
+// Leave empty to skip push notifications
+const VAPID_PUBLIC_KEY = '';
+
+let myProfile = null;
+let feedFollowingIds = [];
+let activeCommentCtx = { type: null, id: null };
+let myReactions = {};
+let followingSet = new Set();
+let lastSeenNotifAt = localStorage.getItem('bt_last_notif') || '1970-01-01T00:00:00Z';
+
+function getInitials(name) {
+  if (!name) return '?';
+  return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+}
+
+function getTimeAgo(dateStr) {
+  const diff = Date.now() - new Date(dateStr);
+  const m = Math.floor(diff / 60000), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  if (m < 2) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  if (h < 24) return `${h}h ago`;
+  if (d < 7) return `${d}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function urlBase64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g,'+').replace(/_/g,'/'));
+  return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
+}
+
+// ── Profile ──────────────────────────────────────────────────
+
+async function loadMyProfile() {
+  if (!currentUser) return null;
+  const { data } = await sb.from('profiles').select('*').eq('user_id', currentUser.id).maybeSingle();
+  myProfile = data;
+  return data;
+}
+
+async function ensureProfile() {
+  if (myProfile) return true;
+  const p = await loadMyProfile();
+  if (!p) { openModal('modal-profile'); return false; }
+  return true;
+}
+
+async function saveProfile() {
+  const name = document.getElementById('profile-name-input').value.trim();
+  if (!name) { showToast('Please enter your name', 'error'); return; }
+  const btn = document.querySelector('#modal-profile .btn-primary');
+  btn.disabled = true;
+  const { error } = await sb.from('profiles')
+    .upsert({ user_id: currentUser.id, full_name: name }, { onConflict: 'user_id' });
+  btn.disabled = false;
+  if (error) { showToast('Error saving name', 'error'); return; }
+  myProfile = { user_id: currentUser.id, full_name: name };
+  closeModal('modal-profile');
+  showToast('Name saved!', 'success');
+  loadFeed();
+}
+
+// ── Friends screen ────────────────────────────────────────────
+
+let friendsTabActive = 'feed';
+
+function switchFriendsTab(tab) {
+  friendsTabActive = tab;
+  document.querySelectorAll('.friends-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.getElementById('friends-feed-view').style.display = tab === 'feed' ? '' : 'none';
+  document.getElementById('friends-people-view').style.display = tab === 'people' ? '' : 'none';
+  if (tab === 'feed') loadFeed();
+  else loadPeopleTab();
+}
+
+async function loadFriendsScreen() {
+  const ok = await ensureProfile();
+  if (!ok) return;
+  if (friendsTabActive === 'feed') loadFeed();
+  else loadPeopleTab();
+  setupPushNotifications();
+}
+
+// ── Feed ──────────────────────────────────────────────────────
+
+async function loadFeed() {
+  const el = document.getElementById('feed-list');
+  if (!el) return;
+  el.innerHTML = '<div class="feed-empty">Loading…</div>';
+
+  const { data: follows } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
+  feedFollowingIds = (follows || []).map(f => f.following_id);
+
+  if (!feedFollowingIds.length) {
+    el.innerHTML = '<div class="feed-empty">Follow some friends to see their scores here!<br><br>Tap <strong>Friends</strong> tab to search by name.</div>';
+    return;
+  }
+
+  const { data: sessions } = await sb.from('sessions')
+    .select('*, games(id, game_number, total_score)')
+    .in('user_id', feedFollowingIds)
+    .order('date', { ascending: false })
+    .limit(30);
+
+  if (!sessions?.length) {
+    el.innerHTML = '<div class="feed-empty">No recent activity from your friends yet.</div>';
+    return;
+  }
+
+  // Profiles for followed users
+  const { data: profiles } = await sb.from('profiles').select('user_id, full_name').in('user_id', feedFollowingIds);
+  const profileMap = {};
+  (profiles || []).forEach(p => profileMap[p.user_id] = p);
+
+  // Reactions on these sessions
+  const sessionIds = sessions.map(s => s.id);
+  const { data: reactions } = await sb.from('reactions')
+    .select('*').eq('target_type', 'session').in('target_id', sessionIds);
+
+  // My reactions
+  myReactions = {};
+  (reactions || []).filter(r => r.user_id === currentUser.id).forEach(r => {
+    myReactions[`${r.target_type}:${r.target_id}`] = r.emoji;
+  });
+
+  // Reaction counts grouped by session
+  const reactionMap = {};
+  (reactions || []).forEach(r => {
+    if (!reactionMap[r.target_id]) reactionMap[r.target_id] = {};
+    reactionMap[r.target_id][r.emoji] = (reactionMap[r.target_id][r.emoji] || 0) + 1;
+  });
+
+  // Comment counts
+  const { data: commentRows } = await sb.from('comments')
+    .select('target_id').eq('target_type', 'session').in('target_id', sessionIds);
+  const commentCountMap = {};
+  (commentRows || []).forEach(c => { commentCountMap[c.target_id] = (commentCountMap[c.target_id] || 0) + 1; });
+
+  el.innerHTML = sessions.map(s =>
+    renderFeedCard(s, profileMap[s.user_id], reactionMap[s.id] || {}, commentCountMap[s.id] || 0)
+  ).join('');
+}
+
+function renderFeedCard(session, profile, reactions, commentCount) {
+  const games = (session.games || [])
+    .filter(g => g.total_score != null)
+    .sort((a,b) => a.game_number - b.game_number);
+  const avg = games.length
+    ? Math.round(games.reduce((s,g) => s + g.total_score, 0) / games.length)
+    : null;
+  const name = profile?.full_name || 'Unknown';
+  const label = session.session_type === 'practice' ? 'Practice' : 'League';
+  const myEmoji = myReactions[`session:${session.id}`];
+
+  const scoreHtml = games.map(g => `
+    <div class="feed-game ${g.total_score >= 200 ? 'great' : ''}">
+      <span class="g-label">G${g.game_number}</span>
+      <span class="g-score">${g.total_score}</span>
+    </div>`).join('') +
+    (avg != null ? `<div class="feed-avg"><span class="g-label">Avg</span><span class="g-score">${avg}</span></div>` : '');
+
+  const reactionBtns = ['👍','🔥','🎳','💯'].map(e => {
+    const count = reactions[e] || 0;
+    const mine = myEmoji === e ? ' mine' : '';
+    return `<button class="reaction-btn${mine}" onclick="toggleReaction('session','${session.id}','${e}',this)">
+      ${e}<span class="r-count">${count || ''}</span></button>`;
+  }).join('');
+
+  const commentLabel = commentCount > 0 ? `💬 ${commentCount}` : '💬';
+
+  return `<div class="feed-card">
+    <div class="feed-header">
+      <div class="feed-avatar">${getInitials(name)}</div>
+      <div class="feed-meta">
+        <div class="feed-name">${escHtml(name)}</div>
+        <div class="feed-time">${escHtml(label)} · ${getTimeAgo(session.date)}</div>
+      </div>
+    </div>
+    <div class="feed-scores">${scoreHtml}</div>
+    <div class="feed-actions">
+      <div class="reaction-bar">${reactionBtns}</div>
+      <button class="comment-trigger-btn" onclick="openComments('session','${session.id}')">${commentLabel}</button>
+    </div>
+    <div class="comments-preview" id="cpreview-${session.id}"></div>
+  </div>`;
+}
+
+// ── Reactions ─────────────────────────────────────────────────
+
+async function toggleReaction(type, id, emoji, btn) {
+  if (!await ensureProfile()) return;
+  const key = `${type}:${id}`;
+  const existing = myReactions[key];
+
+  // Deactivate all buttons in this bar
+  const bar = btn.closest('.reaction-bar');
+  const allBtns = bar ? [...bar.querySelectorAll('.reaction-btn')] : [];
+
+  if (existing === emoji) {
+    await sb.from('reactions').delete()
+      .eq('user_id', currentUser.id).eq('target_type', type).eq('target_id', id);
+    delete myReactions[key];
+    btn.classList.remove('mine');
+    const c = btn.querySelector('.r-count');
+    const prev = parseInt(c.textContent) || 1;
+    c.textContent = prev > 1 ? prev - 1 : '';
+  } else {
+    if (existing) {
+      // Remove old reaction from UI
+      const oldBtn = allBtns.find(b => b.textContent.trim().startsWith(existing));
+      if (oldBtn) {
+        oldBtn.classList.remove('mine');
+        const c = oldBtn.querySelector('.r-count');
+        const prev = parseInt(c.textContent) || 1;
+        c.textContent = prev > 1 ? prev - 1 : '';
+      }
+      await sb.from('reactions').delete()
+        .eq('user_id', currentUser.id).eq('target_type', type).eq('target_id', id);
+    }
+    await sb.from('reactions').insert({ user_id: currentUser.id, target_type: type, target_id: id, emoji });
+    myReactions[key] = emoji;
+    btn.classList.add('mine');
+    const c = btn.querySelector('.r-count');
+    c.textContent = (parseInt(c.textContent) || 0) + 1;
+  }
+}
+
+// ── Comments ──────────────────────────────────────────────────
+
+async function openComments(type, id) {
+  if (!await ensureProfile()) return;
+  activeCommentCtx = { type, id };
+  document.getElementById('comment-input').value = '';
+  document.getElementById('comments-list').innerHTML =
+    '<div style="padding:16px;color:var(--text2);text-align:center;font-size:.85rem;">Loading…</div>';
+  openModal('modal-comments');
+  await loadComments(type, id);
+}
+
+async function loadComments(type, id) {
+  const { data: comments } = await sb.from('comments')
+    .select('*').eq('target_type', type).eq('target_id', id).order('created_at');
+
+  const listEl = document.getElementById('comments-list');
+  if (!comments?.length) {
+    listEl.innerHTML = '<div style="padding:16px;color:var(--text2);text-align:center;font-size:.85rem;">No comments yet.</div>';
+    return;
+  }
+
+  const userIds = [...new Set(comments.map(c => c.user_id))];
+  const { data: profiles } = await sb.from('profiles').select('user_id, full_name').in('user_id', userIds);
+  const pm = {};
+  (profiles || []).forEach(p => pm[p.user_id] = p.full_name);
+
+  listEl.innerHTML = comments.map(c => `
+    <div class="comment-item">
+      <div class="feed-avatar">${getInitials(pm[c.user_id] || '?')}</div>
+      <div class="comment-item-body">
+        <div class="comment-author">${escHtml(pm[c.user_id] || 'Unknown')}</div>
+        <div class="comment-text">${escHtml(c.content)}</div>
+        <div class="comment-age">${getTimeAgo(c.created_at)}</div>
+      </div>
+    </div>`).join('');
+
+  // Show last comment as preview on the feed card
+  const preview = document.getElementById(`cpreview-${id}`);
+  if (preview) {
+    const last = comments[comments.length - 1];
+    preview.innerHTML = `<div class="comment-preview-item"><strong>${escHtml(pm[last.user_id] || 'Someone')}</strong> ${escHtml(last.content)}</div>`;
+    // Update comment count button
+    const card = preview.closest('.feed-card');
+    if (card) {
+      const btn = card.querySelector('.comment-trigger-btn');
+      if (btn) btn.textContent = `💬 ${comments.length}`;
+    }
+  }
+}
+
+async function submitComment() {
+  const { type, id } = activeCommentCtx;
+  if (!type || !id) return;
+  const input = document.getElementById('comment-input');
+  const content = input.value.trim();
+  if (!content) return;
+  input.value = '';
+  const { error } = await sb.from('comments')
+    .insert({ user_id: currentUser.id, target_type: type, target_id: id, content });
+  if (error) { showToast('Error posting comment', 'error'); return; }
+  await loadComments(type, id);
+}
+
+// ── People tab ────────────────────────────────────────────────
+
+async function loadPeopleTab() {
+  const { data: follows } = await sb.from('follows').select('following_id').eq('follower_id', currentUser.id);
+  followingSet = new Set((follows || []).map(f => f.following_id));
+
+  const { data: followers } = await sb.from('follows').select('follower_id').eq('following_id', currentUser.id);
+  const followerIds = (followers || []).map(f => f.follower_id).filter(id => id !== currentUser.id);
+
+  const followingEl = document.getElementById('following-list');
+  const followersEl = document.getElementById('followers-list');
+
+  if (followingSet.size > 0) {
+    const { data: ps } = await sb.from('profiles').select('user_id, full_name').in('user_id', [...followingSet]);
+    followingEl.innerHTML = (ps || []).map(p => renderPersonCard(p, true)).join('') ||
+      '<div style="color:var(--text2);font-size:.85rem;">Nobody yet</div>';
+  } else {
+    followingEl.innerHTML = '<div style="color:var(--text2);font-size:.85rem;">Nobody yet — search above!</div>';
+  }
+
+  if (followerIds.length > 0) {
+    const { data: ps } = await sb.from('profiles').select('user_id, full_name').in('user_id', followerIds);
+    followersEl.innerHTML = (ps || []).map(p => renderPersonCard(p, followingSet.has(p.user_id))).join('') ||
+      '<div style="color:var(--text2);font-size:.85rem;">Nobody yet</div>';
+  } else {
+    followersEl.innerHTML = '<div style="color:var(--text2);font-size:.85rem;">Nobody yet</div>';
+  }
+}
+
+function renderPersonCard(profile, isFollowing) {
+  return `<div class="person-card">
+    <div class="feed-avatar">${getInitials(profile.full_name)}</div>
+    <div class="person-card-name">${escHtml(profile.full_name)}</div>
+    <button class="follow-btn ${isFollowing ? 'following' : ''}"
+      onclick="toggleFollow('${profile.user_id}',this)">${isFollowing ? 'Following' : 'Follow'}</button>
+  </div>`;
+}
+
+async function searchPeople() {
+  const query = document.getElementById('people-search-input').value.trim();
+  if (!query) return;
+  const el = document.getElementById('people-search-results');
+  el.innerHTML = '<div style="color:var(--text2);font-size:.85rem;padding:8px 0;">Searching…</div>';
+  const { data } = await sb.from('profiles')
+    .select('user_id, full_name')
+    .ilike('full_name', `%${query}%`)
+    .neq('user_id', currentUser.id)
+    .limit(20);
+  if (!data?.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:.85rem;padding:8px 0;">No results found.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="people-section-title">Results</div>' +
+    data.map(p => renderPersonCard(p, followingSet.has(p.user_id))).join('');
+}
+
+async function toggleFollow(userId, btn) {
+  btn.disabled = true;
+  if (followingSet.has(userId)) {
+    await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', userId);
+    followingSet.delete(userId);
+    btn.textContent = 'Follow';
+    btn.classList.remove('following');
+  } else {
+    await sb.from('follows').insert({ follower_id: currentUser.id, following_id: userId });
+    followingSet.add(userId);
+    btn.textContent = 'Following';
+    btn.classList.add('following');
+  }
+  btn.disabled = false;
+}
+
+// ── Notification badge ────────────────────────────────────────
+
+async function checkNotifBadge() {
+  const navBtn = document.getElementById('nav-friends');
+  if (!navBtn || !currentUser) return;
+  const { data: mySessions } = await sb.from('sessions').select('id').eq('user_id', currentUser.id).limit(200);
+  const mySessionIds = (mySessions || []).map(s => s.id);
+  if (!mySessionIds.length) return;
+
+  const { count } = await sb.from('reactions')
+    .select('id', { count: 'exact', head: true })
+    .gt('created_at', lastSeenNotifAt)
+    .neq('user_id', currentUser.id)
+    .in('target_id', mySessionIds);
+
+  const existing = navBtn.querySelector('.nav-badge');
+  if (count > 0) {
+    if (!existing) {
+      const badge = document.createElement('span');
+      badge.className = 'nav-badge';
+      badge.textContent = count > 9 ? '9+' : count;
+      navBtn.appendChild(badge);
+    } else {
+      existing.textContent = count > 9 ? '9+' : count;
+    }
+  } else if (existing) {
+    existing.remove();
+  }
+}
+
+function clearNotifBadge() {
+  lastSeenNotifAt = new Date().toISOString();
+  localStorage.setItem('bt_last_notif', lastSeenNotifAt);
+  document.querySelector('#nav-friends .nav-badge')?.remove();
+}
+
+// ── Push notifications ────────────────────────────────────────
+
+async function setupPushNotifications() {
+  if (!VAPID_PUBLIC_KEY || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+  if (Notification.permission === 'denied') return;
+  if (Notification.permission === 'granted') { await subscribeToPush(); return; }
+  if (localStorage.getItem('bt_push_asked')) return;
+  localStorage.setItem('bt_push_asked', '1');
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') await subscribeToPush();
+}
+
+async function subscribeToPush() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const json = sub.toJSON();
+    await sb.from('push_subscriptions').upsert({
+      user_id: currentUser.id,
+      endpoint: json.endpoint,
+      p256dh: json.keys.p256dh,
+      auth_key: json.keys.auth
+    }, { onConflict: 'endpoint' });
+  } catch(e) {
+    console.warn('Push subscription failed:', e);
+  }
+}
+
 // Intercept showScreen to load handicap when going to game
 const _showScreen = showScreen;
 window.showScreen = async function(name) {
@@ -2814,6 +3466,10 @@ window.showScreen = async function(name) {
   if (name === 'game') {
     await loadHandicapForActiveGame();
     if (currentSession) renderGameScreen();
+  }
+  if (name === 'friends') {
+    clearNotifBadge();
+    await loadFriendsScreen();
   }
 };
 </script>
