@@ -1104,6 +1104,16 @@ select option { background: var(--bg2); }
 /* Profile modal */
 .modal-note { font-size: .85rem; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
 
+/* Dot on Activity tab */
+.friends-tab { position: relative; }
+.friends-tab .tab-dot {
+  position: absolute;
+  top: 8px; right: 16px;
+  width: 8px; height: 8px;
+  background: var(--danger);
+  border-radius: 50%;
+}
+
 /* Notification badge on nav */
 #nav-friends { position: relative; }
 .nav-badge {
@@ -3104,7 +3114,7 @@ function switchFriendsTab(tab) {
   document.getElementById('friends-notifs-view').style.display = tab === 'notifs' ? '' : 'none';
   document.getElementById('friends-people-view').style.display = tab === 'people' ? '' : 'none';
   if (tab === 'feed') loadFeed();
-  else if (tab === 'notifs') loadNotifs();
+  else if (tab === 'notifs') { clearNotifBadge(); loadNotifs(); }
   else loadPeopleTab();
 }
 
@@ -3475,8 +3485,16 @@ async function checkNotifBadge() {
     } else {
       existing.textContent = count > 9 ? '9+' : count;
     }
-  } else if (existing) {
-    existing.remove();
+    // Dot on Activity tab
+    const notifsTab = document.getElementById('notifs-tab');
+    if (notifsTab && !notifsTab.querySelector('.tab-dot')) {
+      const dot = document.createElement('span');
+      dot.className = 'tab-dot';
+      notifsTab.appendChild(dot);
+    }
+  } else {
+    existing?.remove();
+    document.querySelector('#notifs-tab .tab-dot')?.remove();
   }
 }
 
