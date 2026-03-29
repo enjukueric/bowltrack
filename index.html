@@ -955,6 +955,17 @@ select option { background: var(--bg2); }
   font-size: .9rem;
 }
 
+/* Share card button */
+.share-card-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 16px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--neon3), var(--neon));
+  color: #000; font-weight: 700; font-size: .85rem;
+  transition: opacity .2s;
+  margin: 0 auto;
+}
+.share-card-btn:active { opacity: .8; }
+
 /* ============================================================
    SOCIAL / FRIENDS
    ============================================================ */
@@ -1922,6 +1933,13 @@ async function loadSessions(leagueId) {
       </div>
       <div class="session-games">
         ${gameRows || '<div class="small" style="padding:8px 0;">No completed games.</div>'}
+        ${games.filter(g=>g.total_score!=null).length > 0 ? `
+        <div style="padding:10px 0 4px;border-top:1px solid var(--border);margin-top:8px;">
+          <button class="share-card-btn" onclick="event.stopPropagation();shareScoreCard('${sess.id}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share Score Card
+          </button>
+        </div>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -3031,6 +3049,232 @@ function formatDate(dateStr) {
     showAuthScreen();
   }
 })();
+
+// ============================================================
+// SHARE SCORE CARD
+// ============================================================
+
+async function shareScoreCard(sessionId) {
+  // Fetch session + games
+  const { data: sess } = await sb.from('sessions')
+    .select('*, games(id, game_number, total_score), leagues(name)')
+    .eq('id', sessionId)
+    .single();
+  if (!sess) { showToast('Could not load session', 'error'); return; }
+
+  const name = myProfile?.full_name || currentUser?.email?.split('@')[0] || 'Bowler';
+  const games = (sess.games || []).filter(g => g.total_score != null).sort((a,b) => a.game_number - b.game_number);
+  if (!games.length) { showToast('No scores to share yet', 'error'); return; }
+
+  const avg = Math.round(games.reduce((s,g) => s + g.total_score, 0) / games.length);
+  const high = Math.max(...games.map(g => g.total_score));
+  const leagueName = sess.leagues?.name || (sess.session_type === 'practice' ? 'Practice Session' : 'League Session');
+  const dateStr = new Date(sess.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1080;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, 1080, 1080);
+
+  // Subtle grid pattern
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < 1080; x += 60) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,1080); ctx.stroke(); }
+  for (let y = 0; y < 1080; y += 60) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(1080,y); ctx.stroke(); }
+
+  // Top accent bar
+  const grad = ctx.createLinearGradient(0, 0, 1080, 0);
+  grad.addColorStop(0, '#b44fff');
+  grad.addColorStop(1, '#00e5ff');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1080, 8);
+
+  // Bowl Track logo area
+  ctx.fillStyle = '#00e5ff';
+  ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('🎳 BOWL', 80, 90);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(' TRACK', 80 + ctx.measureText('🎳 BOWL').width, 90);
+
+  // Divider line under logo
+  ctx.strokeStyle = 'rgba(0,229,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(80, 110); ctx.lineTo(1000, 110); ctx.stroke();
+
+  // Player name
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 72px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  // Truncate long names
+  let displayName = name;
+  while (ctx.measureText(displayName).width > 900 && displayName.length > 1) {
+    displayName = displayName.slice(0, -1);
+  }
+  if (displayName !== name) displayName += '…';
+  ctx.fillText(displayName, 540, 220);
+
+  // League + date
+  ctx.fillStyle = '#9090a8';
+  ctx.font = '32px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText(`${leagueName}  ·  ${dateStr}`, 540, 275);
+
+  // Game score boxes
+  const boxW = Math.min(160, (900 - (games.length - 1) * 20) / games.length);
+  const boxH = 160;
+  const totalW = games.length * boxW + (games.length - 1) * 20;
+  const startX = (1080 - totalW) / 2;
+  const boxY = 340;
+
+  games.forEach((g, i) => {
+    const x = startX + i * (boxW + 20);
+    const is200 = g.total_score >= 200;
+    const isPerfect = g.total_score === 300;
+
+    // Box background
+    ctx.fillStyle = is200 ? 'rgba(255,215,0,0.12)' : 'rgba(255,255,255,0.05)';
+    roundRect(ctx, x, boxY, boxW, boxH, 16);
+    ctx.fill();
+
+    // Box border
+    ctx.strokeStyle = isPerfect ? '#ff6b35' : is200 ? '#ffd700' : 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = isPerfect ? 3 : is200 ? 2 : 1;
+    roundRect(ctx, x, boxY, boxW, boxH, 16);
+    ctx.stroke();
+
+    // Game label
+    ctx.fillStyle = '#9090a8';
+    ctx.font = '22px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`G${g.game_number}`, x + boxW / 2, boxY + 38);
+
+    // Score
+    ctx.fillStyle = isPerfect ? '#ff6b35' : is200 ? '#ffd700' : '#ffffff';
+    ctx.font = `bold ${games.length > 4 ? 48 : 56}px -apple-system, BlinkMacSystemFont, sans-serif`;
+    ctx.fillText(g.total_score, x + boxW / 2, boxY + 110);
+
+    // Perfect badge
+    if (isPerfect) {
+      ctx.fillStyle = '#ff6b35';
+      ctx.font = 'bold 18px -apple-system, BlinkMacSystemFont, sans-serif';
+      ctx.fillText('PERFECT', x + boxW / 2, boxY + 140);
+    }
+  });
+
+  // Stats row
+  const statsY = 570;
+  ctx.textAlign = 'center';
+
+  // Average box
+  drawStatBox(ctx, 270, statsY, 'AVERAGE', avg, '#00e5ff');
+
+  // High game box
+  drawStatBox(ctx, 810, statsY, 'HIGH GAME', high, high >= 200 ? '#ffd700' : '#ffffff');
+
+  // Series total if 3+ games
+  if (games.length >= 3) {
+    const series = games.reduce((s,g) => s + g.total_score, 0);
+    drawStatBox(ctx, 540, statsY, 'SERIES', series, '#b44fff');
+  }
+
+  // Milestone banners
+  const milestones = [];
+  if (games.some(g => g.total_score === 300)) milestones.push('PERFECT GAME! 🎳');
+  else if (high >= 290) milestones.push('SO CLOSE TO PERFECT!');
+  else if (high >= 200) milestones.push('200+ CLUB 🔥');
+  if (avg >= 200) milestones.push('200+ AVERAGE 💯');
+
+  if (milestones.length) {
+    const bannerY = 760;
+    const bannerGrad = ctx.createLinearGradient(140, 0, 940, 0);
+    bannerGrad.addColorStop(0, 'rgba(180,79,255,0.2)');
+    bannerGrad.addColorStop(1, 'rgba(0,229,255,0.2)');
+    ctx.fillStyle = bannerGrad;
+    roundRect(ctx, 140, bannerY, 800, 70, 12);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,229,255,0.4)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, 140, bannerY, 800, 70, 12);
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 30px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(milestones[0], 540, bannerY + 44);
+  }
+
+  // Bottom CTA
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, 140, 880, 800, 130, 16);
+  ctx.fill();
+
+  ctx.fillStyle = '#00e5ff';
+  ctx.font = 'bold 28px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText('Track your game at', 540, 930);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText('enjukueric.github.io/bowltrack', 540, 978);
+
+  // Bottom accent
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 1072, 1080, 8);
+
+  // Convert to blob and share
+  canvas.toBlob(async blob => {
+    const file = new File([blob], 'bowltrack-score.png', { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: `${name} bowled a ${high}!`,
+          text: `Check out my scores on Bowl Track!`
+        });
+      } catch(e) { if (e.name !== 'AbortError') downloadCanvas(canvas); }
+    } else {
+      downloadCanvas(canvas);
+    }
+  }, 'image/png');
+}
+
+function drawStatBox(ctx, cx, y, label, value, color) {
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  roundRect(ctx, cx - 150, y, 300, 140, 16);
+  ctx.fill();
+  ctx.strokeStyle = color + '44';
+  ctx.lineWidth = 1;
+  roundRect(ctx, cx - 150, y, 300, 140, 16);
+  ctx.stroke();
+  ctx.fillStyle = '#9090a8';
+  ctx.font = '22px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, cx, y + 38);
+  ctx.fillStyle = color;
+  ctx.font = 'bold 60px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText(value, cx, y + 108);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function downloadCanvas(canvas) {
+  const a = document.createElement('a');
+  a.download = 'bowltrack-score.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
 
 // ============================================================
 // SOCIAL / FRIENDS
