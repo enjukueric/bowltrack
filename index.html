@@ -1189,6 +1189,99 @@ select option { background: var(--bg2); }
 .feed-name-btn { cursor: pointer; }
 .feed-name-btn:hover { text-decoration: underline; }
 
+/* ============================================================
+   LANE CONDITIONS
+   ============================================================ */
+.lane-cond-toggle {
+  width: 100%; text-align: left; padding: 10px 14px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; font-size: .85rem; font-weight: 600;
+  color: var(--text2); display: flex; align-items: center;
+  justify-content: space-between; transition: border-color .2s;
+}
+.lane-cond-toggle:hover { border-color: var(--neon); color: var(--text); }
+.lane-cond-section { margin-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+.pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.pill-opt {
+  padding: 6px 13px; border-radius: 20px; font-size: .78rem; font-weight: 600;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+  cursor: pointer; transition: all .15s;
+}
+.pill-opt.active { background: rgba(0,229,255,.15); border-color: var(--neon); color: var(--neon); }
+
+/* Lane condition chips in session history */
+.lane-chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+.lane-chip {
+  font-size: .72rem; padding: 3px 9px; border-radius: 10px;
+  background: rgba(0,229,255,.08); border: 1px solid rgba(0,229,255,.2);
+  color: var(--text2); font-weight: 500;
+}
+.lane-chip.pattern-sport   { background: rgba(255,107,53,.08); border-color: rgba(255,107,53,.25); color: var(--neon2); }
+.lane-chip.condition-fresh { background: rgba(68,255,136,.08); border-color: rgba(68,255,136,.25); color: var(--success); }
+.lane-chip.condition-burned { background: rgba(255,68,68,.08); border-color: rgba(255,68,68,.25); color: var(--danger); }
+
+/* Edit lane conditions button in game header */
+.lanes-edit-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px; background: var(--bg3);
+  border: 1px solid var(--border); border-radius: 6px;
+  font-size: .74rem; color: var(--text2); margin-top: 6px;
+  transition: border-color .15s;
+}
+.lanes-edit-btn:hover { border-color: var(--neon); color: var(--text); }
+
+/* ============================================================
+   SHOT TENDENCY LOG
+   ============================================================ */
+.shot-log-section {
+  margin: 8px 16px 0; padding: 14px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.shot-log-toggle {
+  width: 100%; text-align: left; font-size: .85rem; font-weight: 600;
+  color: var(--text2); display: flex; align-items: center;
+  justify-content: space-between; background: none; border: none;
+}
+.shot-log-toggle.has-data { color: var(--neon); }
+.shot-log-form { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
+.sl-label { font-size: .75rem; color: var(--text2); margin-bottom: 5px; }
+.board-input-row { display: flex; gap: 10px; }
+.board-input-wrap { flex: 1; }
+.board-input-wrap input[type=number] { text-align: center; font-size: 1.1rem; font-weight: 700; }
+.arrow-picker { display: flex; gap: 6px; }
+.arrow-btn {
+  flex: 1; padding: 8px 4px; text-align: center;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; font-size: .82rem; font-weight: 600;
+  color: var(--text2); cursor: pointer; transition: all .15s;
+}
+.arrow-btn.active { background: rgba(0,229,255,.15); border-color: var(--neon); color: var(--neon); }
+.sl-save-btn { width: 100%; margin-top: 4px; }
+
+/* Shot log read-only display */
+.shot-log-display { margin-top: 10px; }
+.sl-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.sl-chip {
+  font-size: .75rem; padding: 4px 10px; border-radius: 10px;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+}
+.sl-chip.reaction-flush { border-color: var(--success); color: var(--success); background: rgba(68,255,136,.08); }
+.sl-chip.reaction-left, .sl-chip.reaction-right { border-color: var(--neon2); color: var(--neon2); background: rgba(255,107,53,.08); }
+
+/* Lane breakdown in stats */
+.lane-breakdown { padding: 16px; }
+.lb-heading { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text2); margin-bottom: 12px; }
+.lb-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--bg3);
+  border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px;
+}
+.lb-label { font-size: .88rem; font-weight: 600; }
+.lb-sub   { font-size: .72rem; color: var(--text2); margin-top: 2px; }
+.lb-avg   { font-size: 1.4rem; font-weight: 700; color: var(--neon); }
+.lb-empty { font-size: .85rem; color: var(--text2); text-align: center; padding: 16px 0; }
+
 /* Notification badge on nav */
 #nav-friends { position: relative; }
 .nav-badge {
@@ -1199,6 +1292,226 @@ select option { background: var(--bg2); }
   display: flex; align-items: center; justify-content: center;
   padding: 0 3px;
 }
+
+/* ============================================================
+   LUCKY LANE CARD
+   ============================================================ */
+.lucky-lane-card {
+  margin: 12px 16px 4px;
+  background: linear-gradient(135deg, var(--bg2) 0%, rgba(180,79,255,.12) 100%);
+  border: 1px solid rgba(180,79,255,.3);
+  border-radius: var(--radius);
+  padding: 12px 14px 12px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  position: relative;
+}
+.ll-icon { font-size: 1.5rem; flex-shrink: 0; line-height: 1.2; }
+.ll-body { flex: 1; }
+.ll-eyebrow { font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--neon3); font-weight: 700; margin-bottom: 3px; }
+.ll-text { font-size: .83rem; color: var(--text2); line-height: 1.45; }
+.ll-dismiss { position: absolute; top: 8px; right: 10px; font-size: .75rem; color: var(--text2); padding: 2px 6px; opacity: .6; }
+
+/* ============================================================
+   STRIKE / TURKEY ANIMATION OVERLAY
+   ============================================================ */
+#strike-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,.6) 0%, transparent 70%);
+}
+#strike-overlay.show { animation: strikeAnim 1.9s ease forwards; }
+@keyframes strikeAnim {
+  0%   { opacity: 0; transform: scale(.5); }
+  12%  { opacity: 1; transform: scale(1.08); }
+  30%  { opacity: 1; transform: scale(1); }
+  70%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(.95) translateY(-10px); }
+}
+.strike-word {
+  font-size: 3.8rem; font-weight: 900;
+  letter-spacing: .05em; text-transform: uppercase;
+  line-height: 1;
+  text-shadow: 0 0 40px currentColor, 0 2px 8px rgba(0,0,0,.8);
+}
+.strike-streak {
+  font-size: .9rem; letter-spacing: .25em;
+  text-transform: uppercase; margin-top: 8px;
+  opacity: .85;
+}
+.strike-emoji { font-size: 2.2rem; margin-top: 12px; }
+
+.confetti-container { position: fixed; inset: 0; pointer-events: none; z-index: 9998; overflow: hidden; }
+.confetto {
+  position: absolute; top: -12px;
+  width: 8px; height: 8px; border-radius: 2px;
+  animation: confettoFall var(--dur,1.4s) var(--delay,0s) ease-in forwards;
+  opacity: 0;
+}
+@keyframes confettoFall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(540deg); opacity: 0; }
+}
+
+/* ============================================================
+   PERSONAL BEST OVERLAY
+   ============================================================ */
+#pb-overlay {
+  position: fixed; inset: 0; z-index: 9990;
+  background: rgba(0,0,0,.88);
+  display: none; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; padding: 32px;
+}
+#pb-overlay.show { display: flex; }
+.pb-crown { font-size: 3.8rem; margin-bottom: 6px; animation: pbPop .45s .05s both; }
+@keyframes pbPop {
+  0%   { transform: scale(0) rotate(-25deg); opacity:0; }
+  75%  { transform: scale(1.15) rotate(5deg); opacity:1; }
+  100% { transform: scale(1) rotate(0); }
+}
+.pb-label { font-size: .8rem; text-transform: uppercase; letter-spacing: .18em; color: var(--text2); margin-bottom: 6px; }
+.pb-score-val { font-size: 5.5rem; font-weight: 900; color: var(--strike); line-height: 1; animation: pbScoreIn .35s .25s both; text-shadow: 0 0 60px rgba(255,215,0,.5); }
+@keyframes pbScoreIn { from { transform: scale(1.4); opacity:0; } to { transform: scale(1); opacity:1; } }
+.pb-prev { font-size: .82rem; color: var(--text2); margin-top: 8px; }
+.pb-btn { margin-top: 32px; max-width: 200px; width: 100%; }
+
+/* ============================================================
+   BALL ARSENAL SCREEN
+   ============================================================ */
+.arsenal-subheader {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 6px;
+}
+.arsenal-subheader span { font-size: .75rem; text-transform: uppercase; letter-spacing: .07em; color: var(--text2); }
+
+.ball-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 13px 14px;
+  margin: 0 16px 10px;
+  display: flex; align-items: center; gap: 12px;
+}
+.ball-orb {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  position: relative;
+  box-shadow: inset 0 3px 8px rgba(255,255,255,.18), 0 0 16px rgba(0,0,0,.5);
+}
+.ball-orb::after {
+  content: '';
+  position: absolute; top: 9px; left: 9px;
+  width: 6px; height: 6px;
+  background: rgba(0,0,0,.45); border-radius: 50%;
+  box-shadow: 8px 2px 0 rgba(0,0,0,.38), 16px -2px 0 rgba(0,0,0,.38);
+}
+.ball-info { flex: 1; min-width: 0; }
+.ball-name { font-weight: 600; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ball-meta { font-size: .75rem; color: var(--text2); margin-top: 2px; }
+.ball-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.ball-edit-btn {
+  padding: 6px 12px; border-radius: 8px; font-size: .78rem; font-weight: 600;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+}
+.ball-del-btn {
+  padding: 6px 10px; border-radius: 8px; font-size: .78rem;
+  background: rgba(255,68,68,.1); border: 1px solid rgba(255,68,68,.2); color: var(--danger);
+}
+.arsenal-empty {
+  text-align: center; padding: 44px 24px;
+  color: var(--text2); font-size: .88rem; line-height: 1.6;
+}
+.arsenal-empty span { font-size: 2.5rem; display: block; margin-bottom: 12px; }
+
+/* Color picker swatches */
+.color-swatch {
+  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  border: 2px solid transparent;
+}
+.color-swatch.selected { border-color: #fff; transform: scale(1.15); }
+
+/* In-game ball indicator bar */
+.game-ball-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  font-size: .82rem;
+}
+.gbb-orb {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  position: relative;
+  box-shadow: inset 0 1px 4px rgba(255,255,255,.2);
+}
+.gbb-orb::after {
+  content: '';
+  position: absolute; top: 4px; left: 4px;
+  width: 3px; height: 3px;
+  background: rgba(0,0,0,.45); border-radius: 50%;
+  box-shadow: 4px 1px 0 rgba(0,0,0,.38), 8px -1px 0 rgba(0,0,0,.38);
+}
+.gbb-name { font-weight: 600; color: var(--text); }
+.gbb-switch {
+  margin-left: auto; padding: 4px 12px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 6px; font-size: .74rem; color: var(--neon);
+}
+
+/* Ball picker list in switch modal */
+.ball-picker-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; margin: 8px 0; }
+.ball-picker-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px; background: var(--bg3);
+  border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+  transition: border-color .15s;
+}
+.ball-picker-item.active { border-color: var(--neon); background: rgba(0,229,255,.07); }
+.bpi-name { font-weight: 600; font-size: .9rem; }
+.bpi-meta { font-size: .73rem; color: var(--text2); }
+
+/* Ball usage timeline on game complete */
+.ball-usage-timeline {
+  margin: 8px 16px 0; padding: 12px 14px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.but-heading { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; color: var(--text2); margin-bottom: 8px; }
+.but-row { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-size: .82rem; }
+.but-frames { color: var(--text2); font-size: .74rem; min-width: 88px; }
+.but-orb { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.but-ball { font-weight: 600; }
+
+/* ============================================================
+   ACHIEVEMENT BADGES
+   ============================================================ */
+.achievements-section { padding: 0 16px 20px; }
+.achievements-heading { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: var(--text2); padding: 14px 0 10px; }
+.badges-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; }
+.badge-item { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
+.badge-icon-wrap {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+  background: var(--bg3); border: 1px solid var(--border);
+  transition: all .2s;
+}
+.badge-item.unlocked .badge-icon-wrap {
+  background: rgba(0,229,255,.1); border-color: var(--neon);
+  box-shadow: 0 0 14px rgba(0,229,255,.18);
+}
+.badge-item.gold .badge-icon-wrap {
+  background: rgba(255,215,0,.1); border-color: var(--strike);
+  box-shadow: 0 0 14px rgba(255,215,0,.22);
+}
+.badge-item.purple .badge-icon-wrap {
+  background: rgba(180,79,255,.1); border-color: var(--neon3);
+  box-shadow: 0 0 14px rgba(180,79,255,.22);
+}
+.badge-item.locked .badge-icon-wrap { opacity: .25; filter: grayscale(1); }
+.badge-lbl { font-size: .6rem; color: var(--text2); line-height: 1.25; }
+.badge-item.unlocked .badge-lbl, .badge-item.gold .badge-lbl, .badge-item.purple .badge-lbl { color: var(--text); }
 </style>
 </head>
 <body>
@@ -1290,6 +1603,7 @@ select option { background: var(--bg2); }
         </div>
       </div>
 
+      <div id="lucky-lane"></div>
       <div class="section-title">Leagues</div>
       <div class="league-list" id="league-list">
         <div class="spinner"></div>
@@ -1316,6 +1630,9 @@ select option { background: var(--bg2); }
         <div>
           <h2 id="game-screen-title">Active Game</h2>
           <div class="subtitle" id="game-screen-subtitle"></div>
+          <button class="lanes-edit-btn" id="lanes-edit-btn" onclick="openEditLaneConditions()" style="display:none;">
+            🛤️ <span id="lanes-btn-label">Add Lane Info</span>
+          </button>
         </div>
         <button class="btn-secondary" style="padding:8px 12px;font-size:.8rem;" onclick="abandonGame()">Exit</button>
       </div>
@@ -1380,6 +1697,12 @@ select option { background: var(--bg2); }
         </div>
 
         <div class="settings-section">
+          <h3>Ball Arsenal</h3>
+          <p style="font-size:.8rem;color:var(--text2);margin-bottom:10px;">Manage your bowling balls and track per-game usage.</p>
+          <button class="btn-secondary" style="width:100%;" onclick="openArsenalScreen()">Open Arsenal 🎳</button>
+        </div>
+
+        <div class="settings-section">
           <h3>Data</h3>
           <button class="btn-secondary" style="width:100%;margin-bottom:8px;" onclick="syncOfflineGames()">Sync Offline Games</button>
           <button class="btn-secondary" style="width:100%;" onclick="clearLocalCache()">Clear Local Cache</button>
@@ -1387,6 +1710,22 @@ select option { background: var(--bg2); }
       </div>
     </div>
 
+
+    <!-- ARSENAL SCREEN -->
+    <div id="screen-arsenal" class="screen">
+      <div class="page-header">
+        <div>
+          <h2>Arsenal</h2>
+          <div class="subtitle">Your bowling balls</div>
+        </div>
+        <button class="btn-secondary" style="padding:8px 12px;font-size:.8rem;" onclick="showScreen('settings')">Back</button>
+      </div>
+      <div class="arsenal-subheader">
+        <span id="arsenal-count">0 balls</span>
+        <button class="btn-secondary" style="padding:8px 16px;font-size:.82rem;" onclick="openAddBallModal()">+ Add Ball</button>
+      </div>
+      <div id="arsenal-list"></div>
+    </div>
 
     <!-- PROFILE SCREEN -->
     <div id="screen-profile" class="screen">
@@ -1509,11 +1848,112 @@ select option { background: var(--bg2); }
     </div>
     <div class="form-group">
       <label>Notes (optional)</label>
-      <textarea id="session-notes-input" rows="2" placeholder="e.g. Week 12, Lane 14-15"></textarea>
+      <textarea id="session-notes-input" rows="2" placeholder="e.g. Week 12"></textarea>
+    </div>
+    <div class="form-group">
+      <button type="button" class="lane-cond-toggle" onclick="toggleLaneCondSection()">
+        <span>🛤️ Lane Conditions</span><span id="lc-toggle-arrow">▼</span>
+      </button>
+      <div class="lane-cond-section" id="lane-cond-section" style="display:none;">
+        <div>
+          <label>Lane Number(s)</label>
+          <input type="text" id="lc-lanes-input" placeholder="e.g. 14-15 or 7" maxlength="20">
+        </div>
+        <div>
+          <label>Pattern Type</label>
+          <div class="pill-row" id="lc-pattern-pills">
+            <button type="button" class="pill-opt" data-val="house"     onclick="selectLcPill('pattern','house')">House</button>
+            <button type="button" class="pill-opt" data-val="sport"     onclick="selectLcPill('pattern','sport')">Sport</button>
+            <button type="button" class="pill-opt" data-val="challenge" onclick="selectLcPill('pattern','challenge')">Challenge</button>
+            <button type="button" class="pill-opt" data-val="flooding"  onclick="selectLcPill('pattern','flooding')">Flooding</button>
+            <button type="button" class="pill-opt" data-val="unknown"   onclick="selectLcPill('pattern','unknown')">Unknown</button>
+          </div>
+          <input type="hidden" id="lc-pattern-val">
+        </div>
+        <div>
+          <label>Pattern Length</label>
+          <div class="pill-row" id="lc-length-pills">
+            <button type="button" class="pill-opt" data-val="short"   onclick="selectLcPill('length','short')">Short &lt;38ft</button>
+            <button type="button" class="pill-opt" data-val="medium"  onclick="selectLcPill('length','medium')">Medium 38–42ft</button>
+            <button type="button" class="pill-opt" data-val="long"    onclick="selectLcPill('length','long')">Long 42ft+</button>
+            <button type="button" class="pill-opt" data-val="unknown" onclick="selectLcPill('length','unknown')">Unknown</button>
+          </div>
+          <input type="hidden" id="lc-length-val">
+        </div>
+        <div>
+          <label>Lane Condition</label>
+          <div class="pill-row" id="lc-cond-pills">
+            <button type="button" class="pill-opt" data-val="fresh"    onclick="selectLcPill('cond','fresh')">Fresh 🟢</button>
+            <button type="button" class="pill-opt" data-val="breaking" onclick="selectLcPill('cond','breaking')">Breaking Down</button>
+            <button type="button" class="pill-opt" data-val="burned"   onclick="selectLcPill('cond','burned')">Burned Out 🔴</button>
+            <button type="button" class="pill-opt" data-val="unknown"  onclick="selectLcPill('cond','unknown')">Unknown</button>
+          </div>
+          <input type="hidden" id="lc-cond-val">
+        </div>
+        <div>
+          <label>Lane Notes (optional)</label>
+          <textarea id="lc-notes-input" rows="2" placeholder="e.g. Heavy outside, carrydown building by game 2"></textarea>
+        </div>
+      </div>
     </div>
     <div class="modal-btns">
       <button class="btn-secondary" onclick="closeModal('modal-session')">Cancel</button>
       <button class="btn-primary" onclick="createSession()">Start Bowling!</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit Lane Conditions -->
+<div class="modal-overlay" id="modal-lane-cond">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3>Lane Conditions</h3>
+      <button onclick="closeModal('modal-lane-cond')" style="font-size:1.2rem;color:var(--text2);padding:4px 8px;">✕</button>
+    </div>
+    <div class="lane-cond-section" style="display:flex;">
+      <div>
+        <label>Lane Number(s)</label>
+        <input type="text" id="elc-lanes-input" placeholder="e.g. 14-15" maxlength="20">
+      </div>
+      <div>
+        <label>Pattern Type</label>
+        <div class="pill-row" id="elc-pattern-pills">
+          <button type="button" class="pill-opt" data-val="house"     onclick="selectElcPill('pattern','house')">House</button>
+          <button type="button" class="pill-opt" data-val="sport"     onclick="selectElcPill('pattern','sport')">Sport</button>
+          <button type="button" class="pill-opt" data-val="challenge" onclick="selectElcPill('pattern','challenge')">Challenge</button>
+          <button type="button" class="pill-opt" data-val="flooding"  onclick="selectElcPill('pattern','flooding')">Flooding</button>
+          <button type="button" class="pill-opt" data-val="unknown"   onclick="selectElcPill('pattern','unknown')">Unknown</button>
+        </div>
+        <input type="hidden" id="elc-pattern-val">
+      </div>
+      <div>
+        <label>Pattern Length</label>
+        <div class="pill-row" id="elc-length-pills">
+          <button type="button" class="pill-opt" data-val="short"   onclick="selectElcPill('length','short')">Short &lt;38ft</button>
+          <button type="button" class="pill-opt" data-val="medium"  onclick="selectElcPill('length','medium')">Medium 38–42ft</button>
+          <button type="button" class="pill-opt" data-val="long"    onclick="selectElcPill('length','long')">Long 42ft+</button>
+          <button type="button" class="pill-opt" data-val="unknown" onclick="selectElcPill('length','unknown')">Unknown</button>
+        </div>
+        <input type="hidden" id="elc-length-val">
+      </div>
+      <div>
+        <label>Lane Condition</label>
+        <div class="pill-row" id="elc-cond-pills">
+          <button type="button" class="pill-opt" data-val="fresh"    onclick="selectElcPill('cond','fresh')">Fresh 🟢</button>
+          <button type="button" class="pill-opt" data-val="breaking" onclick="selectElcPill('cond','breaking')">Breaking Down</button>
+          <button type="button" class="pill-opt" data-val="burned"   onclick="selectElcPill('cond','burned')">Burned Out 🔴</button>
+          <button type="button" class="pill-opt" data-val="unknown"  onclick="selectElcPill('cond','unknown')">Unknown</button>
+        </div>
+        <input type="hidden" id="elc-cond-val">
+      </div>
+      <div>
+        <label>Lane Notes</label>
+        <textarea id="elc-notes-input" rows="2" placeholder="e.g. Heavy outside, carrydown building by game 2"></textarea>
+      </div>
+    </div>
+    <div class="modal-btns" style="margin-top:16px;">
+      <button class="btn-secondary" onclick="closeModal('modal-lane-cond')">Cancel</button>
+      <button class="btn-primary" onclick="saveLaneConditions()">Save</button>
     </div>
   </div>
 </div>
@@ -1547,6 +1987,74 @@ select option { background: var(--bg2); }
     </div>
   </div>
 </div>
+
+<!-- MODAL: Add/Edit Ball -->
+<div class="modal-overlay" id="modal-ball">
+  <div class="modal">
+    <h3 id="modal-ball-title">Add Ball</h3>
+    <input type="hidden" id="modal-ball-id">
+    <div class="form-group">
+      <label>Ball Name</label>
+      <input type="text" id="ball-name-input" placeholder="Storm Hy-Road" maxlength="60">
+    </div>
+    <div class="form-group" style="display:flex;gap:10px;">
+      <div style="flex:1;">
+        <label>Weight (lbs)</label>
+        <input type="number" id="ball-weight-input" placeholder="15" min="6" max="16" step="0.5">
+      </div>
+      <div style="flex:1;">
+        <label>Surface</label>
+        <select id="ball-surface-input">
+          <option value="">—</option>
+          <option value="reactive">Reactive</option>
+          <option value="hybrid">Hybrid</option>
+          <option value="urethane">Urethane</option>
+          <option value="particle">Particle</option>
+          <option value="plastic">Plastic/Spare</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Color</label>
+      <div id="ball-color-picker" style="display:flex;gap:7px;flex-wrap:wrap;margin-top:6px;"></div>
+      <input type="hidden" id="ball-color-input" value="#6C63FF">
+    </div>
+    <div class="form-group">
+      <label>Notes (optional)</label>
+      <textarea id="ball-notes-input" rows="2" placeholder="e.g. 4000 Abralon finish, drilled 45/75"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-ball')">Cancel</button>
+      <button class="btn-primary" onclick="saveBall()">Save Ball</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Switch Ball (in-game) -->
+<div class="modal-overlay" id="modal-switch-ball">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <h3>Switch Ball</h3>
+      <button onclick="closeModal('modal-switch-ball')" style="font-size:1.2rem;color:var(--text2);padding:4px 8px;">✕</button>
+    </div>
+    <p style="font-size:.8rem;color:var(--text2);margin-bottom:10px;">From frame <span id="switch-ball-frame">1</span> onwards</p>
+    <div class="ball-picker-list" id="ball-picker-list"></div>
+    <button class="btn-secondary" style="width:100%;margin-top:8px;font-size:.82rem;" onclick="selectBallForGame(null)">No ball / clear</button>
+  </div>
+</div>
+
+<!-- PERSONAL BEST OVERLAY -->
+<div id="pb-overlay">
+  <div class="pb-crown">👑</div>
+  <div class="pb-label">New Personal Best!</div>
+  <div class="pb-score-val" id="pb-score-val">—</div>
+  <div class="pb-prev" id="pb-prev-text"></div>
+  <button class="btn-primary pb-btn" onclick="closePbOverlay()">Hell yeah! 🎳</button>
+</div>
+
+<!-- STRIKE ANIMATION OVERLAY -->
+<div id="strike-overlay"></div>
+<div class="confetti-container" id="confetti-container"></div>
 
 <!-- TOAST -->
 <div id="toast"></div>
@@ -1606,6 +2114,11 @@ let gameStates = [];
 let currentFrame  = 1;   // 1-10
 let currentRoll   = 1;   // 1-3 (roll within frame)
 let selectedPins  = new Set(); // pins selected on current roll click
+
+// Arsenal & ball tracking
+let myBalls = [];
+let gameBallLog = {};   // { gameId: [{id,ball_id,from_frame,balls:{name,color_hex}}] }
+let prevHighGame = null; // for personal best detection
 
 // Offline queue
 let offlineQueue = JSON.parse(localStorage.getItem('bt_offline_queue') || '[]');
@@ -1819,6 +2332,10 @@ async function loadHomeStats() {
   document.getElementById('hs-games-count').textContent = scores.length || '0';
   document.getElementById('hs-high').textContent = scores.length ? Math.max(...scores) : '—';
   document.getElementById('hs-leagues').textContent = leagues.length;
+
+  // Set baseline high score for personal best detection
+  if (scores.length) prevHighGame = Math.max(...scores);
+  renderLuckyLane();
 }
 
 async function renderLeagueList() {
@@ -2004,12 +2521,14 @@ async function loadSessions(leagueId) {
     }).join('');
 
     const dateStr = formatDate(sess.date);
+    const laneChips = buildLaneChips(sess);
     return `
     <div class="session-card" id="sess-${sess.id}">
       <div class="session-header" onclick="toggleSession('${sess.id}')">
         <div>
           <div class="session-date">${dateStr}</div>
           <div class="session-meta">${games.length} game${games.length!==1?'s':''} ${sess.notes ? '· '+esc(sess.notes) : ''}</div>
+          ${laneChips ? `<div class="lane-chips">${laneChips}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           ${scoreBadges}
@@ -2038,6 +2557,19 @@ function startNewSession() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('session-date-input').value = today;
   document.getElementById('session-notes-input').value = '';
+  // Reset lane condition fields
+  document.getElementById('lc-lanes-input').value   = '';
+  document.getElementById('lc-notes-input').value   = '';
+  ['lc-pattern-val','lc-length-val','lc-cond-val'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.querySelectorAll('#lane-cond-section .pill-opt').forEach(b => b.classList.remove('active'));
+  // Collapse the section
+  const sec = document.getElementById('lane-cond-section');
+  if (sec) sec.style.display = 'none';
+  const arr = document.getElementById('lc-toggle-arrow');
+  if (arr) arr.textContent = '▼';
   openModal('modal-session');
 }
 
@@ -2047,10 +2579,19 @@ async function createSession() {
   const numGames = parseInt(document.getElementById('session-games-input').value) || 3;
   if (!date) { showToast('Please select a date', 'error'); return; }
 
+  // Lane conditions
+  const lcPayload = {
+    lanes:          document.getElementById('lc-lanes-input').value.trim() || null,
+    pattern:        document.getElementById('lc-pattern-val').value || null,
+    pattern_length: document.getElementById('lc-length-val').value || null,
+    condition:      document.getElementById('lc-cond-val').value || null,
+    lane_notes:     document.getElementById('lc-notes-input').value.trim() || null,
+  };
+
   // Create session (league or practice)
   const insertData = currentLeague
-    ? { league_id: currentLeague.id, user_id: currentUser.id, date, notes, session_type: 'league' }
-    : { user_id: currentUser.id, date, notes, session_type: 'practice' };
+    ? { league_id: currentLeague.id, user_id: currentUser.id, date, notes, session_type: 'league', ...lcPayload }
+    : { user_id: currentUser.id, date, notes, session_type: 'practice', ...lcPayload };
   const { data: sessData, error: sessErr } = await sb.from('sessions')
     .insert(insertData)
     .select().single();
@@ -2086,6 +2627,7 @@ async function createSession() {
   }));
 
   activeGameIndex = 0;
+  await loadBalls();
   showScreen('game');
   renderGameScreen();
 }
@@ -2123,6 +2665,18 @@ function renderGameScreen() {
   const league = leagues.find(l=>l.id===currentSession.league_id);
   document.getElementById('game-screen-title').textContent = league ? esc(league.name) : (currentSession.session_type === 'practice' ? 'Practice' : 'Active Session');
   document.getElementById('game-screen-subtitle').textContent = formatDate(currentSession.date);
+  // Show/update lane conditions button
+  const laneBtn = document.getElementById('lanes-edit-btn');
+  if (laneBtn) {
+    laneBtn.style.display = '';
+    const lbl = document.getElementById('lanes-btn-label');
+    if (lbl) {
+      const hasLanes = currentSession.lanes || currentSession.pattern;
+      lbl.textContent = hasLanes
+        ? `🛤️ ${currentSession.lanes || capFirst(currentSession.pattern || '')}`
+        : '+ Add Lane Info';
+    }
+  }
 
   // Render game tabs
   const tabsEl = document.getElementById('game-tabs');
@@ -2198,11 +2752,20 @@ function renderActiveGame() {
   const scoreHTML  = renderScorecard(gs);
   const metaHTML   = renderGameMeta(gs);
 
+  const ballBarHTML = renderGameBallBar(gs);
   if (done) {
-    area.innerHTML = scoreHTML + metaHTML + renderGameComplete(gs);
+    // Load shot log for this game if not cached, then render
+    if (shotLogCache[gs.gameId] === undefined) {
+      area.innerHTML = ballBarHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + '<div style="padding:16px;text-align:center;"><div class="spinner"></div></div>';
+      loadShotLog(gs.gameId).then(() => {
+        area.innerHTML = ballBarHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
+      });
+    } else {
+      area.innerHTML = ballBarHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
+    }
   } else {
     const pinHTML    = renderPinArea(gs);
-    area.innerHTML   = scoreHTML + metaHTML + pinHTML;
+    area.innerHTML   = ballBarHTML + scoreHTML + metaHTML + pinHTML;
   }
 }
 
@@ -2439,7 +3002,8 @@ function renderGameComplete(gs) {
     ${league ? `<div class="gc-handi">+ ${handi} handicap = <span>${handiScore}</span></div>` : ''}
     ${nextBtn}
     <button class="btn-secondary" style="max-width:200px;margin:8px auto 0;font-size:.8rem;" onclick="undoLastRoll()">Undo Last Roll</button>
-  </div>`;
+  </div>
+  ${renderShotLogSection(gs)}`;
 }
 
 // ============================================================
@@ -2587,6 +3151,14 @@ async function confirmRoll() {
   } else if (currentRoll === 3) {
     frame.roll3       = count;
     frame.roll3_pins  = pinsDown;
+  }
+
+  // Detect strike / spare for animation
+  if (currentRoll === 1 && count === 10 && currentFrame <= 9) {
+    const streak = countConsecutiveStrikes(gs, currentFrame);
+    setTimeout(() => triggerStrikeAnim(streak), 80);
+  } else if (currentRoll === 2 && currentFrame < 10 && (frame.roll1 + count) === 10) {
+    setTimeout(() => triggerStrikeAnim(0), 80); // spare
   }
 
   // Advance frame/roll
@@ -2817,6 +3389,21 @@ async function saveFrame(gs, frame) {
 
 async function saveGameScore(gs) {
   if (!gs.score) return;
+
+  // Check personal best before saving
+  const isPB = prevHighGame !== null && gs.score > prevHighGame;
+  const isFirst = prevHighGame === null;
+  if (isPB) {
+    setTimeout(() => showPersonalBest(gs.score, prevHighGame), 400);
+    prevHighGame = gs.score;
+  } else if (isFirst) {
+    prevHighGame = gs.score;
+  }
+
+  // Check live achievements
+  checkLiveAchievements(gs);
+  if (gs.score >= 200 && unlockAchievement('pb_200')) showToast('🏅 Achievement: 200+ Game! 🌟', 'success');
+
   if (!navigator.onLine) {
     offlineQueue.push({ type: 'game_score', gameId: gs.gameId, score: gs.score });
     localStorage.setItem('bt_offline_queue', JSON.stringify(offlineQueue));
@@ -3178,7 +3765,10 @@ async function renderStatsContent() {
     </div>` : ''}
   </div>`;
 
-  content.innerHTML = statsGridHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
+  // Lane breakdown
+  const laneBreakdownHTML = await renderLaneBreakdown(statsLeagueId);
+
+  content.innerHTML = statsGridHTML + laneBreakdownHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
 }
 
 // ============================================================
@@ -3377,7 +3967,9 @@ async function loadProfileScreen(userId) {
     ? `<div style="text-align:center;padding:16px;font-size:.82rem;color:var(--text2);">Follow ${escHtml(profile.full_name)} to see their scores.</div>`
     : '';
 
-  el.innerHTML = heroHtml + statsHtml + privacyNote + sessionSection;
+  const isOwnProfile = userId === currentUser?.id;
+  const achieveHtml = isOwnProfile ? renderAchievements(allGames) : '';
+  el.innerHTML = heroHtml + statsHtml + privacyNote + achieveHtml + sessionSection;
 }
 
 async function toggleProfileFollow(userId) {
@@ -4156,9 +4748,672 @@ async function subscribeToPush() {
   }
 }
 
+// ============================================================
+// BALL ARSENAL
+// ============================================================
+const BALL_COLORS = [
+  '#6C63FF','#00e5ff','#ff6b35','#b44fff','#44ff88',
+  '#FFD700','#FF4081','#00BCD4','#FF9800','#e8e8f0',
+  '#1a1a2e','#8B0000','#006400','#1565C0','#4a4a4a'
+];
+
+async function loadBalls() {
+  if (!currentUser) return;
+  const { data } = await sb.from('balls').select('*').eq('user_id', currentUser.id).order('created_at');
+  myBalls = data || [];
+}
+
+async function openArsenalScreen() {
+  await loadBalls();
+  renderArsenal();
+  _showScreen('arsenal');
+}
+
+function renderArsenal() {
+  const cnt = document.getElementById('arsenal-count');
+  const list = document.getElementById('arsenal-list');
+  if (cnt) cnt.textContent = myBalls.length === 1 ? '1 ball' : `${myBalls.length} balls`;
+  if (!list) return;
+  if (!myBalls.length) {
+    list.innerHTML = `<div class="arsenal-empty"><span>🎳</span>No balls in your arsenal yet.<br>Add your first ball to start tracking which ball you throw each game.</div>`;
+    return;
+  }
+  list.innerHTML = myBalls.map(b => `
+    <div class="ball-card">
+      <div class="ball-orb" style="background:${esc(b.color_hex||'#6C63FF')}"></div>
+      <div class="ball-info">
+        <div class="ball-name">${esc(b.name)}</div>
+        <div class="ball-meta">${[b.weight ? b.weight+'lb' : '', b.surface ? capFirst(b.surface) : ''].filter(Boolean).join(' · ') || 'No details'}</div>
+      </div>
+      <div class="ball-actions">
+        <button class="ball-edit-btn" onclick="openEditBallModal('${b.id}')">Edit</button>
+        <button class="ball-del-btn" onclick="deleteBall('${b.id}')">Del</button>
+      </div>
+    </div>`).join('');
+}
+
+function capFirst(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+function openAddBallModal() {
+  document.getElementById('modal-ball-title').textContent = 'Add Ball';
+  document.getElementById('modal-ball-id').value = '';
+  document.getElementById('ball-name-input').value = '';
+  document.getElementById('ball-weight-input').value = '';
+  document.getElementById('ball-surface-input').value = '';
+  document.getElementById('ball-notes-input').value = '';
+  renderColorPicker('#6C63FF');
+  openModal('modal-ball');
+}
+
+function openEditBallModal(id) {
+  const b = myBalls.find(x => x.id === id);
+  if (!b) return;
+  document.getElementById('modal-ball-title').textContent = 'Edit Ball';
+  document.getElementById('modal-ball-id').value = id;
+  document.getElementById('ball-name-input').value = b.name;
+  document.getElementById('ball-weight-input').value = b.weight || '';
+  document.getElementById('ball-surface-input').value = b.surface || '';
+  document.getElementById('ball-notes-input').value = b.notes || '';
+  renderColorPicker(b.color_hex || '#6C63FF');
+  openModal('modal-ball');
+}
+
+function renderColorPicker(selected) {
+  document.getElementById('ball-color-input').value = selected;
+  document.getElementById('ball-color-picker').innerHTML = BALL_COLORS.map(c => `
+    <div class="color-swatch${c===selected?' selected':''}" style="background:${c};" onclick="selectBallColor('${c}')"></div>
+  `).join('');
+}
+
+function selectBallColor(color) {
+  document.getElementById('ball-color-input').value = color;
+  renderColorPicker(color);
+}
+
+async function saveBall() {
+  const name = document.getElementById('ball-name-input').value.trim();
+  if (!name) { showToast('Ball name required', 'error'); return; }
+  const id = document.getElementById('modal-ball-id').value;
+  const payload = {
+    name,
+    weight: parseFloat(document.getElementById('ball-weight-input').value) || null,
+    surface: document.getElementById('ball-surface-input').value || null,
+    color_hex: document.getElementById('ball-color-input').value || '#6C63FF',
+    notes: document.getElementById('ball-notes-input').value.trim() || null,
+    user_id: currentUser.id
+  };
+  const { error } = id
+    ? await sb.from('balls').update(payload).eq('id', id)
+    : await sb.from('balls').insert(payload);
+  if (error) { showToast('Error saving ball', 'error'); return; }
+  closeModal('modal-ball');
+  await loadBalls();
+  renderArsenal();
+  showToast(id ? 'Ball updated!' : 'Ball added to arsenal! 🎳', 'success');
+}
+
+async function deleteBall(id) {
+  if (!confirm('Remove this ball from your arsenal?')) return;
+  await sb.from('balls').delete().eq('id', id);
+  await loadBalls();
+  renderArsenal();
+  showToast('Ball removed');
+}
+
+// ============================================================
+// IN-GAME BALL TRACKING
+// ============================================================
+async function loadGameBallLog(gameId) {
+  const { data } = await sb.from('game_ball_log')
+    .select('*, balls(name,color_hex)')
+    .eq('game_id', gameId).order('from_frame');
+  gameBallLog[gameId] = data || [];
+}
+
+function getCurrentBallEntry(gameId, frameNum) {
+  const log = gameBallLog[gameId] || [];
+  let entry = null;
+  for (const e of log) { if (e.from_frame <= frameNum) entry = e; }
+  return entry;
+}
+
+function renderGameBallBar(gs) {
+  if (!myBalls.length) return '';
+  const entry = getCurrentBallEntry(gs.gameId, currentFrame);
+  const name  = entry?.balls?.name || 'No ball selected';
+  const color = entry?.balls?.color_hex || 'var(--bg3)';
+  return `<div class="game-ball-bar">
+    <div class="gbb-orb" style="background:${color}"></div>
+    <span class="gbb-name">${esc(name)}</span>
+    <button class="gbb-switch" onclick="openSwitchBallModal()">Switch Ball</button>
+  </div>`;
+}
+
+async function openSwitchBallModal() {
+  if (!myBalls.length) { showToast('Add balls to your Arsenal first', 'error'); return; }
+  const gs = gameStates[activeGameIndex];
+  const activeEntry = getCurrentBallEntry(gs.gameId, currentFrame);
+  document.getElementById('switch-ball-frame').textContent = currentFrame;
+  document.getElementById('ball-picker-list').innerHTML = myBalls.map(b => `
+    <div class="ball-picker-item${b.id===activeEntry?.ball_id?' active':''}" onclick="selectBallForGame('${b.id}')">
+      <div class="ball-orb" style="background:${esc(b.color_hex||'#6C63FF')};width:34px;height:34px;"></div>
+      <div>
+        <div class="bpi-name">${esc(b.name)}</div>
+        <div class="bpi-meta">${[b.weight?b.weight+'lb':'',b.surface?capFirst(b.surface):''].filter(Boolean).join(' · ')||'No details'}</div>
+      </div>
+    </div>`).join('');
+  openModal('modal-switch-ball');
+}
+
+async function selectBallForGame(ballId) {
+  closeModal('modal-switch-ball');
+  const gs = gameStates[activeGameIndex];
+  if (!gameBallLog[gs.gameId]) gameBallLog[gs.gameId] = [];
+  const log = gameBallLog[gs.gameId];
+  const existing = log.find(e => e.from_frame === currentFrame);
+  if (existing) {
+    await sb.from('game_ball_log').delete().eq('id', existing.id);
+    gameBallLog[gs.gameId] = log.filter(e => e.from_frame !== currentFrame);
+  }
+  if (ballId) {
+    const { data } = await sb.from('game_ball_log')
+      .insert({ game_id: gs.gameId, ball_id: ballId, from_frame: currentFrame })
+      .select('*, balls(name,color_hex)').single();
+    if (data) {
+      gameBallLog[gs.gameId].push(data);
+      gameBallLog[gs.gameId].sort((a,b) => a.from_frame - b.from_frame);
+    }
+  }
+  renderGameScreen();
+}
+
+function renderBallUsageTimeline(gs) {
+  const log = gameBallLog[gs.gameId] || [];
+  if (!log.length) return '';
+  const segments = log.map((e, i) => ({
+    from:  e.from_frame,
+    to:    i+1 < log.length ? log[i+1].from_frame - 1 : 10,
+    name:  e.balls?.name || 'Unknown',
+    color: e.balls?.color_hex || '#6C63FF'
+  }));
+  return `<div class="ball-usage-timeline">
+    <div class="but-heading">Ball Usage This Game</div>
+    ${segments.map(s => `
+      <div class="but-row">
+        <div class="but-frames">Frame${s.from===s.to?` ${s.from}`:`s ${s.from}–${s.to}`}</div>
+        <div class="but-orb" style="background:${esc(s.color)}"></div>
+        <div class="but-ball">${esc(s.name)}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+// ============================================================
+// STRIKE / TURKEY ANIMATIONS
+// ============================================================
+const STREAK_LABELS = ['','','DOUBLE!','TURKEY! 🦃','FOUR-BAGGER!','FIVE-BAGGER!','SIX PACK!','SEVEN!','EIGHT!','NINE!','TEN!','ELEVEN!','PERFECT!'];
+const STREAK_COLORS = ['','','#00e5ff','#ff6b35','#FFD700','#b44fff','#ff4081','#44ff88','#FFD700','#ff6b35','#FFD700','#FFD700','#FFD700'];
+
+function triggerStrikeAnim(streak) {
+  const overlay = document.getElementById('strike-overlay');
+  overlay.className = '';
+  const isSpare = streak === 0;
+  const word    = isSpare ? 'SPARE!' : (streak === 1 ? 'STRIKE!' : STREAK_LABELS[streak] || `${streak} IN A ROW!`);
+  const color   = isSpare ? 'var(--spare)' : (STREAK_COLORS[streak] || 'var(--strike)');
+  const sub     = !isSpare && streak >= 2 ? `${streak} strikes in a row` : '';
+  const emojis  = isSpare ? '✓' : streak >= 12 ? '🎳🎳🎳' : streak >= 6 ? '🔥🔥' : streak >= 3 ? '🦃' : '⚡';
+  overlay.innerHTML = `
+    <div class="strike-word" style="color:${color}">${word}</div>
+    ${sub ? `<div class="strike-streak" style="color:${color}">${sub}</div>` : ''}
+    <div class="strike-emoji">${emojis}</div>`;
+  void overlay.offsetWidth;
+  overlay.classList.add('show');
+  if (!isSpare && streak >= 2) spawnConfetti(color);
+}
+
+function spawnConfetti(baseColor) {
+  const container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  const colors = [baseColor,'#FFD700','#ffffff','#ff6b35','#b44fff','#44ff88'];
+  for (let i = 0; i < 55; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetto';
+    el.style.cssText = `
+      left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      --dur:${.9+Math.random()*.8}s;
+      --delay:${Math.random()*.4}s;
+      width:${6+Math.random()*7}px;height:${6+Math.random()*7}px;
+      border-radius:${Math.random()>.5?'50%':'2px'};`;
+    container.appendChild(el);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 2000);
+}
+
+function countConsecutiveStrikes(gs, upToFrame) {
+  let n = 0;
+  for (let fi = upToFrame - 1; fi >= 0; fi--) {
+    if (gs.frames[fi].roll1 === 10) n++;
+    else break;
+  }
+  return n;
+}
+
+// ============================================================
+// PERSONAL BEST CELEBRATION
+// ============================================================
+function showPersonalBest(score, prev) {
+  document.getElementById('pb-score-val').textContent = score;
+  document.getElementById('pb-prev-text').textContent = prev ? `Previous best: ${prev}` : 'Your first recorded score!';
+  document.getElementById('pb-overlay').classList.add('show');
+  spawnConfetti('#FFD700');
+}
+
+function closePbOverlay() {
+  document.getElementById('pb-overlay').classList.remove('show');
+}
+
+// ============================================================
+// LUCKY LANE — daily bowling fortune
+// ============================================================
+const LUCKY_LANE_FORTUNES = [
+  { icon: '🎳', text: 'Today's energy: 7-10 split. You'll pick it up.' },
+  { icon: '🔥', text: 'Three strikes in a row is not luck. It's you. Own it.' },
+  { icon: '🌊', text: 'Play the oil pattern, not the line you wish existed.' },
+  { icon: '🧘', text: 'Slow your backswing. Slow it down more. Perfect.' },
+  { icon: '🎯', text: 'Every spare is a strike waiting to be rescheduled.' },
+  { icon: '🦃', text: 'Turkey incoming. You can feel it. Don't say it out loud.' },
+  { icon: '💎', text: 'Your rev rate is fine. Your attitude is the variable.' },
+  { icon: '🌙', text: 'Late night practice bowlers carry a certain mystique. You are that mystique.' },
+  { icon: '⚡', text: 'The pocket is right there. It has always been right there.' },
+  { icon: '🎲', text: 'Lane 14 is calling your name. Lane 14 is always calling your name.' },
+  { icon: '🏆', text: 'The 300 game is a conversation between you and physics. Physics wants you to win.' },
+  { icon: '🎸', text: 'Bowl like nobody's watching. Except everyone is watching. Bowl like that.' },
+  { icon: '🌈', text: 'Your bowling ball has a name. You just haven't discovered it yet.' },
+  { icon: '🚀', text: 'Full roller. Backup ball. Fingertip. The delivery doesn't matter. The spare does.' },
+  { icon: '🎪', text: 'Tonight's lane conditions: character-building.' },
+  { icon: '🦅', text: 'See the arrows. Trust the arrows. Be the arrows.' },
+  { icon: '🌟', text: 'The only thing better than a strike is two strikes. The only thing better than two is obvious.' },
+  { icon: '🎭', text: 'You are not nervous. That is adrenaline. Channel it into the pocket.' },
+  { icon: '🌊', text: 'Move your feet first. Your ball will follow. Your average will follow.' },
+  { icon: '🔮', text: 'Something happens on frame 7. It is unclear what. Be ready.' },
+  { icon: '🐉', text: 'The back row of pins fears you. They just don't show it.' },
+  { icon: '⚙️', text: 'Consistent release > powerful release. Ask anyone who's consistent.' },
+  { icon: '🌅', text: 'Every game is a fresh 300 attempt. That's the beauty and the curse.' },
+  { icon: '🎵', text: 'Play the same music you warmed up to. Your muscles remember.' },
+  { icon: '🏄', text: 'Ride the oil transition like you planned it. Adjust like a pro.' },
+];
+
+function renderLuckyLane() {
+  const el = document.getElementById('lucky-lane');
+  if (!el) return;
+  const today = new Date().toDateString();
+  const dismissed = localStorage.getItem('bt_ll_dismissed');
+  if (dismissed === today) { el.innerHTML = ''; return; }
+  const idx = (new Date().getDate() + new Date().getMonth() * 31) % LUCKY_LANE_FORTUNES.length;
+  const f = LUCKY_LANE_FORTUNES[idx];
+  el.innerHTML = `<div class="lucky-lane-card">
+    <div class="ll-icon">${f.icon}</div>
+    <div class="ll-body">
+      <div class="ll-eyebrow">Lucky Lane ✨</div>
+      <div class="ll-text">${f.text}</div>
+    </div>
+    <button class="ll-dismiss" onclick="dismissLuckyLane()">✕</button>
+  </div>`;
+}
+
+function dismissLuckyLane() {
+  localStorage.setItem('bt_ll_dismissed', new Date().toDateString());
+  document.getElementById('lucky-lane').innerHTML = '';
+}
+
+// ============================================================
+// ACHIEVEMENTS
+// ============================================================
+const ACHIEVEMENT_DEFS = [
+  { id:'first_game',   icon:'🎳', label:'First Game',    color:'',       check:(g,a)=>a>=1 },
+  { id:'century',      icon:'💯', label:'Century Club',  color:'',       check:(g,a,avg)=>avg>=100 },
+  { id:'high_roller',  icon:'🔥', label:'High Roller',   color:'',       check:(g,a,avg)=>avg>=150 },
+  { id:'pin_crusher',  icon:'💎', label:'Pin Crusher',   color:'',       check:(g,a,avg)=>avg>=180 },
+  { id:'elite',        icon:'👑', label:'Elite',         color:'gold',   check:(g,a,avg)=>avg>=200 },
+  { id:'perfect',      icon:'🏆', label:'Perfect 300',   color:'gold',   check:(g,a,avg,hi)=>hi>=300 },
+  { id:'centurion',    icon:'🎲', label:'100 Games',     color:'purple', check:(g,a)=>a>=100 },
+  { id:'turkey',       icon:'🦃', label:'Turkey Club',   color:'',       check:()=>getLiveAchievement('turkey') },
+  { id:'six_pack',     icon:'📦', label:'Six Pack',      color:'purple', check:()=>getLiveAchievement('six_pack') },
+  { id:'clean_sheet',  icon:'🧹', label:'Clean Sheet',   color:'',       check:()=>getLiveAchievement('clean_sheet') },
+  { id:'spare5',       icon:'🎯', label:'5 Spares',      color:'',       check:()=>getLiveAchievement('spare5') },
+  { id:'pb_200',       icon:'🌟', label:'200+ Game',     color:'gold',   check:(g,a,avg,hi)=>hi>=200 },
+];
+
+function getLiveAchievement(id) {
+  const stored = JSON.parse(localStorage.getItem('bt_achievements') || '{}');
+  return !!stored[id];
+}
+
+function unlockAchievement(id) {
+  const stored = JSON.parse(localStorage.getItem('bt_achievements') || '{}');
+  if (stored[id]) return false;
+  stored[id] = true;
+  localStorage.setItem('bt_achievements', JSON.stringify(stored));
+  return true;
+}
+
+function checkLiveAchievements(gs) {
+  const frames = gs.frames.filter(f => f.roll1 !== null);
+
+  // Turkey / Six Pack
+  let maxStreak = 0, cur = 0;
+  for (let fi = 0; fi < 9; fi++) {
+    if (gs.frames[fi].roll1 === 10) { cur++; maxStreak = Math.max(maxStreak, cur); }
+    else cur = 0;
+  }
+  if (maxStreak >= 3 && unlockAchievement('turkey'))   showToast('🏅 Achievement: Turkey Club! 🦃', 'success');
+  if (maxStreak >= 6 && unlockAchievement('six_pack')) showToast('🏅 Achievement: Six Pack! 📦', 'success');
+
+  // Spare specialist (5+ spares in one game)
+  let spares = 0;
+  for (let fi = 0; fi < 9; fi++) {
+    const f = gs.frames[fi];
+    if (f.roll1 !== 10 && f.roll2 !== null && f.roll1 + f.roll2 === 10) spares++;
+  }
+  if (spares >= 5 && unlockAchievement('spare5')) showToast('🏅 Achievement: Spare Specialist! 🎯', 'success');
+
+  // Clean sheet (no open frames in first 9)
+  let allClean = gs.frames.slice(0,9).every(f =>
+    f.roll1 === 10 || (f.roll2 !== null && f.roll1 + f.roll2 === 10)
+  );
+  if (allClean && gs.frames[8].roll1 !== null && unlockAchievement('clean_sheet'))
+    showToast('🏅 Achievement: Clean Sheet! 🧹', 'success');
+
+  // Perfect game
+  if (gs.score === 300 && unlockAchievement('perfect'))
+    showToast('🏅 PERFECT GAME! 🏆', 'success');
+}
+
+function renderAchievements(allGames) {
+  const scores = allGames.map(g => g.total_score).filter(s=>s!=null);
+  const count  = scores.length;
+  const avg    = count ? Math.round(scores.reduce((a,b)=>a+b,0)/count) : 0;
+  const hi     = count ? Math.max(...scores) : 0;
+
+  return `<div class="achievements-section">
+    <div class="achievements-heading">Achievements</div>
+    <div class="badges-grid">
+      ${ACHIEVEMENT_DEFS.map(def => {
+        const earned = def.check(null, count, avg, hi);
+        const cls = earned ? (def.color ? `badge-item unlocked ${def.color}` : 'badge-item unlocked') : 'badge-item locked';
+        return `<div class="${cls}">
+          <div class="badge-icon-wrap">${def.icon}</div>
+          <div class="badge-lbl">${def.label}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
+// ============================================================
+// LANE CONDITIONS
+// ============================================================
+function toggleLaneCondSection() {
+  const sec = document.getElementById('lane-cond-section');
+  const arrow = document.getElementById('lc-toggle-arrow');
+  const open = sec.style.display === 'none';
+  sec.style.display = open ? 'flex' : 'none';
+  if (arrow) arrow.textContent = open ? '▲' : '▼';
+}
+
+function selectLcPill(group, val) {
+  const ids = { pattern: 'lc-pattern-pills', length: 'lc-length-pills', cond: 'lc-cond-pills' };
+  const valIds = { pattern: 'lc-pattern-val', length: 'lc-length-val', cond: 'lc-cond-val' };
+  document.querySelectorAll(`#${ids[group]} .pill-opt`).forEach(b => {
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+  document.getElementById(valIds[group]).value = val;
+}
+
+function selectElcPill(group, val) {
+  const ids = { pattern: 'elc-pattern-pills', length: 'elc-length-pills', cond: 'elc-cond-pills' };
+  const valIds = { pattern: 'elc-pattern-val', length: 'elc-length-val', cond: 'elc-cond-val' };
+  document.querySelectorAll(`#${ids[group]} .pill-opt`).forEach(b => {
+    b.classList.toggle('active', b.dataset.val === val);
+  });
+  document.getElementById(valIds[group]).value = val;
+}
+
+function openEditLaneConditions() {
+  if (!currentSession) return;
+  document.getElementById('elc-lanes-input').value   = currentSession.lanes || '';
+  document.getElementById('elc-notes-input').value   = currentSession.lane_notes || '';
+  ['pattern','length','cond'].forEach(g => {
+    const valIds = { pattern:'elc-pattern-val', length:'elc-length-val', cond:'elc-cond-val' };
+    const curVals = { pattern: currentSession.pattern, length: currentSession.pattern_length, cond: currentSession.condition };
+    document.getElementById(valIds[g]).value = curVals[g] || '';
+    if (curVals[g]) selectElcPill(g, curVals[g]);
+  });
+  openModal('modal-lane-cond');
+}
+
+async function saveLaneConditions() {
+  if (!currentSession) return;
+  const payload = {
+    lanes:          document.getElementById('elc-lanes-input').value.trim() || null,
+    pattern:        document.getElementById('elc-pattern-val').value || null,
+    pattern_length: document.getElementById('elc-length-val').value || null,
+    condition:      document.getElementById('elc-cond-val').value || null,
+    lane_notes:     document.getElementById('elc-notes-input').value.trim() || null,
+  };
+  const { error } = await sb.from('sessions').update(payload).eq('id', currentSession.id);
+  if (error) { showToast('Error saving lane conditions', 'error'); return; }
+  Object.assign(currentSession, payload);
+  closeModal('modal-lane-cond');
+  renderGameScreen();
+  showToast('Lane conditions saved!', 'success');
+}
+
+function buildLaneChips(sess) {
+  const chips = [];
+  if (sess.lanes)          chips.push(`<span class="lane-chip">🛤️ ${esc(sess.lanes)}</span>`);
+  if (sess.pattern)        chips.push(`<span class="lane-chip pattern-${sess.pattern}">${capFirst(sess.pattern)} shot</span>`);
+  if (sess.pattern_length) chips.push(`<span class="lane-chip">${capFirst(sess.pattern_length)} length</span>`);
+  if (sess.condition)      chips.push(`<span class="lane-chip condition-${sess.condition}">${capFirst(sess.condition)}</span>`);
+  return chips.join('');
+}
+
+// ============================================================
+// SHOT TENDENCY LOG
+// ============================================================
+let shotLogCache = {}; // { gameId: data }
+
+async function loadShotLog(gameId) {
+  const { data } = await sb.from('shot_logs').select('*').eq('game_id', gameId).maybeSingle();
+  shotLogCache[gameId] = data || null;
+  return data;
+}
+
+function renderShotLogSection(gs) {
+  const existing = shotLogCache[gs.gameId];
+  const toggleClass = existing ? 'shot-log-toggle has-data' : 'shot-log-toggle';
+  const toggleLabel = existing ? '🎯 Game Tendency — logged ✓' : '🎯 Log Game Tendency';
+
+  const formHtml = `
+    <div class="shot-log-form" id="shot-log-form-${gs.gameId}" style="display:none;">
+      <div class="board-input-row">
+        <div class="board-input-wrap">
+          <div class="sl-label">Starting Board</div>
+          <input type="number" id="sl-board-${gs.gameId}" min="1" max="39"
+            value="${existing?.start_board||''}" placeholder="15"
+            style="text-align:center;font-size:1.1rem;font-weight:700;">
+        </div>
+        <div class="board-input-wrap">
+          <div class="sl-label">Target Arrow (1–7)</div>
+          <div class="arrow-picker" id="sl-arrow-${gs.gameId}">
+            ${[1,2,3,4,5,6,7].map(n => `
+              <button type="button" class="arrow-btn${existing?.target_arrow===n?' active':''}"
+                onclick="selectArrow('${gs.gameId}',${n})">${n}</button>`).join('')}
+          </div>
+          <input type="hidden" id="sl-arrow-val-${gs.gameId}" value="${existing?.target_arrow||''}">
+        </div>
+      </div>
+      <div>
+        <div class="sl-label">Ball Reaction</div>
+        <div class="pill-row" id="sl-reaction-${gs.gameId}">
+          ${[['left','Left of Pocket'],['flush','Flush ✓'],['right','Right of Pocket'],
+             ['early','Early Roll'],['late','Late Flip'],['inconsistent','Inconsistent']].map(([v,l]) => `
+            <button type="button" class="pill-opt${existing?.reaction===v?' active':''}"
+              onclick="selectSlPill('reaction','${gs.gameId}','${v}')">${l}</button>`).join('')}
+        </div>
+        <input type="hidden" id="sl-reaction-val-${gs.gameId}" value="${existing?.reaction||''}">
+      </div>
+      <div>
+        <div class="sl-label">Adjustment Made</div>
+        <div class="pill-row" id="sl-adj-${gs.gameId}">
+          ${[['none','None'],['move_left','Moved Left'],['move_right','Moved Right'],
+             ['target','Changed Target'],['speed_slow','Slowed Down'],['speed_fast','Sped Up']].map(([v,l]) => `
+            <button type="button" class="pill-opt${existing?.adjustment===v?' active':''}"
+              onclick="selectSlPill('adj','${gs.gameId}','${v}')">${l}</button>`).join('')}
+        </div>
+        <input type="hidden" id="sl-adj-val-${gs.gameId}" value="${existing?.adjustment||''}">
+      </div>
+      <div id="sl-boards-row-${gs.gameId}" style="${existing?.adjustment?.startsWith('move')?'':'display:none'}">
+        <div class="sl-label">How many boards?</div>
+        <input type="number" id="sl-adj-boards-${gs.gameId}" min="1" max="20"
+          value="${existing?.adj_boards||''}" placeholder="e.g. 2" style="width:100px;">
+      </div>
+      <div>
+        <div class="sl-label">Notes</div>
+        <textarea id="sl-notes-${gs.gameId}" rows="2"
+          placeholder="e.g. Moved 2 boards left frame 5, ball started tracking better">${existing?.notes||''}</textarea>
+      </div>
+      <button class="btn-primary sl-save-btn" onclick="saveShotLog('${gs.gameId}')">Save Tendencies</button>
+    </div>`;
+
+  const displayHtml = existing ? `
+    <div class="shot-log-display" id="shot-log-display-${gs.gameId}">
+      <div class="sl-row">
+        ${existing.start_board  ? `<span class="sl-chip">Board ${existing.start_board}</span>` : ''}
+        ${existing.target_arrow ? `<span class="sl-chip">Arrow ${existing.target_arrow}</span>` : ''}
+        ${existing.reaction     ? `<span class="sl-chip reaction-${existing.reaction}">${capFirst(existing.reaction)}</span>` : ''}
+        ${existing.adjustment && existing.adjustment !== 'none'
+          ? `<span class="sl-chip">${adjLabel(existing.adjustment)}${existing.adj_boards?' '+existing.adj_boards+'bd':''}</span>` : ''}
+      </div>
+      ${existing.notes ? `<div style="font-size:.8rem;color:var(--text2);margin-top:6px;">${esc(existing.notes)}</div>` : ''}
+    </div>` : '';
+
+  return `<div class="shot-log-section">
+    <button class="${toggleClass}" onclick="toggleShotLogForm('${gs.gameId}')">${toggleLabel} <span>▼</span></button>
+    ${displayHtml}
+    ${formHtml}
+  </div>`;
+}
+
+function adjLabel(v) {
+  return {move_left:'Moved Left',move_right:'Moved Right',target:'Changed Target',
+          speed_slow:'Slowed Down',speed_fast:'Sped Up',none:'None'}[v] || v;
+}
+
+function toggleShotLogForm(gameId) {
+  const form = document.getElementById(`shot-log-form-${gameId}`);
+  if (form) form.style.display = form.style.display === 'none' ? 'flex' : 'none';
+}
+
+function selectArrow(gameId, n) {
+  document.querySelectorAll(`#sl-arrow-${gameId} .arrow-btn`)
+    .forEach(b => b.classList.toggle('active', parseInt(b.textContent) === n));
+  document.getElementById(`sl-arrow-val-${gameId}`).value = n;
+}
+
+function selectSlPill(group, gameId, val) {
+  document.querySelectorAll(`#sl-${group}-${gameId} .pill-opt`)
+    .forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes(`'${val}'`)));
+  document.getElementById(`sl-${group}-val-${gameId}`).value = val;
+  if (group === 'adj') {
+    const boardsRow = document.getElementById(`sl-boards-row-${gameId}`);
+    if (boardsRow) boardsRow.style.display = val.startsWith('move') ? '' : 'none';
+  }
+}
+
+async function saveShotLog(gameId) {
+  const payload = {
+    game_id:      gameId,
+    start_board:  parseInt(document.getElementById(`sl-board-${gameId}`).value) || null,
+    target_arrow: parseInt(document.getElementById(`sl-arrow-val-${gameId}`).value) || null,
+    reaction:     document.getElementById(`sl-reaction-val-${gameId}`).value || null,
+    adjustment:   document.getElementById(`sl-adj-val-${gameId}`).value || null,
+    adj_boards:   parseInt(document.getElementById(`sl-adj-boards-${gameId}`)?.value) || null,
+    notes:        document.getElementById(`sl-notes-${gameId}`).value.trim() || null,
+  };
+  const { error } = await sb.from('shot_logs').upsert(payload, { onConflict: 'game_id' });
+  if (error) { showToast('Error saving tendency log', 'error'); return; }
+  shotLogCache[gameId] = payload;
+  showToast('Tendency logged! 🎯', 'success');
+  renderGameScreen();
+}
+
+// ============================================================
+// LANE BREAKDOWN (stats)
+// ============================================================
+async function renderLaneBreakdown(leagueId) {
+  // Fetch sessions with conditions + games
+  let q = sb.from('sessions')
+    .select('id, pattern, pattern_length, condition, lanes, games(total_score)')
+    .eq('user_id', currentUser.id)
+    .not('pattern', 'is', null);
+  if (leagueId) q = q.eq('league_id', leagueId);
+  const { data: sessions } = await q;
+
+  if (!sessions || !sessions.length) return '';
+
+  // Group by pattern type
+  const byPattern = {};
+  for (const s of sessions) {
+    if (!s.pattern) continue;
+    const scores = (s.games || []).map(g => g.total_score).filter(n => n != null);
+    if (!scores.length) continue;
+    if (!byPattern[s.pattern]) byPattern[s.pattern] = [];
+    byPattern[s.pattern].push(...scores);
+  }
+
+  // Group by condition
+  const byCondition = {};
+  for (const s of sessions) {
+    if (!s.condition) continue;
+    const scores = (s.games || []).map(g => g.total_score).filter(n => n != null);
+    if (!scores.length) continue;
+    if (!byCondition[s.condition]) byCondition[s.condition] = [];
+    byCondition[s.condition].push(...scores);
+  }
+
+  const rowHtml = (label, sub, scores) => {
+    const avg = Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+    return `<div class="lb-row">
+      <div><div class="lb-label">${label}</div><div class="lb-sub">${scores.length} game${scores.length!==1?'s':''} · ${sub}</div></div>
+      <div class="lb-avg">${avg}</div>
+    </div>`;
+  };
+
+  const PATTERN_LABELS = {house:'House Shot',sport:'Sport Shot',challenge:'Challenge',flooding:'Flooding',unknown:'Unknown'};
+  const COND_LABELS    = {fresh:'Fresh Lanes',breaking:'Breaking Down',burned:'Burned Out',unknown:'Unknown'};
+
+  const patternRows = Object.entries(byPattern)
+    .sort((a,b) => b[1].length - a[1].length)
+    .map(([p, sc]) => rowHtml(PATTERN_LABELS[p]||p, p, sc)).join('');
+
+  const condRows = Object.entries(byCondition)
+    .sort((a,b) => b[1].length - a[1].length)
+    .map(([c, sc]) => rowHtml(COND_LABELS[c]||c, c, sc)).join('');
+
+  if (!patternRows && !condRows) return '';
+
+  return `<div class="stats-section lane-breakdown">
+    <h3>🛤️ Lane Breakdown</h3>
+    ${patternRows ? `<div class="lb-heading">By Pattern Type</div>${patternRows}` : ''}
+    ${condRows   ? `<div class="lb-heading" style="margin-top:14px;">By Lane Condition</div>${condRows}` : ''}
+  </div>`;
+}
+
 // Intercept showScreen to load handicap when going to game
 const _showScreen = showScreen;
 window.showScreen = async function(name) {
+  if (name === 'arsenal') { await openArsenalScreen(); return; }
   _showScreen(name);
   if (name === 'game') {
     await loadHandicapForActiveGame();
