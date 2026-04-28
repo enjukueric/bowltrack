@@ -2234,17 +2234,8 @@ function switchAuthTab(tab) {
   document.getElementById('auth-signup-form').style.display = tab==='signup' ? '' : 'none';
 }
 
-async function doGoogleLogin() {
-  try {
-    const { data, error } = await sb.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: 'https://enjukueric.github.io/bowltrack/' }
-    });
-    if (error) showToast('Google login error: ' + (error.message || JSON.stringify(error)), 'error');
-    else if (!data?.url) showToast('No redirect URL returned — check Supabase URL config', 'error');
-  } catch(e) {
-    showToast('Login failed: ' + (e.message || e), 'error');
-  }
+function doGoogleLogin() {
+  window.location.href = SUPA_URL + '/auth/v1/authorize?provider=google&redirect_to=' + encodeURIComponent('https://enjukueric.github.io/bowltrack/');
 }
 
 async function doLogin() {
