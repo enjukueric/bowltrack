@@ -2119,6 +2119,8 @@ let selectedPins  = new Set(); // pins selected on current roll click
 let myBalls = [];
 let gameBallLog = {};   // { gameId: [{id,ball_id,from_frame,balls:{name,color_hex}}] }
 let prevHighGame = null; // for personal best detection
+let leagueAvgs = {};
+let practiceAvgCached = null;
 
 // Offline queue
 let offlineQueue = JSON.parse(localStorage.getItem('bt_offline_queue') || '[]');
@@ -2135,6 +2137,66 @@ function updateOnlineStatus() {
 window.addEventListener('online',  () => { updateOnlineStatus(); syncOfflineGames(); });
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
+
+// ============================================================
+// HOME DATA CACHE  (shows last-known data instantly on open)
+// ============================================================
+const BT_CACHE_KEY = 'bt_home_cache';
+const BT_SESSION_KEY = 'sb-mzjicrhoyftmzeqqjzbj-auth-token';
+
+function saveHomeCache() {
+  try {
+    localStorage.setItem(BT_CACHE_KEY, JSON.stringify({
+      ts: Date.now(),
+      displayName: myProfile?.full_name || currentUser?.email || '',
+      stats: {
+        avg: document.getElementById('hs-overall-avg').textContent,
+        games: document.getElementById('hs-games-count').textContent,
+        high: document.getElementById('hs-high').textContent,
+        leagueCount: leagues.length,
+        practiceAvg: practiceAvgCached
+      },
+      leagues: leagues.map(lg => ({
+        id: lg.id, name: lg.name,
+        handicap_base: lg.handicap_base, handicap_pct: lg.handicap_pct,
+        avg: leagueAvgs[lg.id] ?? null
+      }))
+    }));
+  } catch(e) {}
+}
+
+function paintCachedHome() {
+  try {
+    const raw = localStorage.getItem(BT_CACHE_KEY);
+    if (!raw) return false;
+    const c = JSON.parse(raw);
+    document.getElementById('home-subtitle').textContent = c.displayName || '';
+    document.getElementById('hs-overall-avg').textContent = c.stats.avg ?? '—';
+    document.getElementById('hs-games-count').textContent = c.stats.games ?? '—';
+    document.getElementById('hs-high').textContent = c.stats.high ?? '—';
+    document.getElementById('hs-leagues').textContent = c.stats.leagueCount ?? '—';
+    const practiceEl = document.getElementById('practice-avg');
+    if (practiceEl) practiceEl.textContent = c.stats.practiceAvg != null ? Math.round(c.stats.practiceAvg) : '—';
+    const list = document.getElementById('league-list');
+    if (c.leagues && c.leagues.length) {
+      list.innerHTML = c.leagues.map(lg => {
+        const avg = lg.avg;
+        const handi = avg != null ? Math.max(0, Math.round((lg.handicap_base - avg) * (lg.handicap_pct / 100))) : 0;
+        return `<div class="league-card" onclick="openLeagueSessions('${lg.id}')">
+          <div class="lc-info">
+            <div class="lc-name">${esc(lg.name)}</div>
+            <div class="lc-meta">Hdcp base ${lg.handicap_base} @ ${lg.handicap_pct}% &nbsp;·&nbsp; Hdcp: <span style="color:var(--neon2)">${handi}</span></div>
+          </div>
+          <div>
+            <div class="lc-avg">${avg !== null ? Math.round(avg) : '—'}</div>
+            <div class="lc-avg-lbl">average</div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    return true;
+  } catch(e) { return false; }
+}
 
 // ============================================================
 // AUTH
@@ -2210,6 +2272,7 @@ async function doSignup() {
 
 async function doLogout() {
   await sb.auth.signOut();
+  localStorage.removeItem(BT_CACHE_KEY);
   leagues = []; currentSession = null; gameStates = [];
 }
 
@@ -2315,8 +2378,9 @@ async function loadHomeData() {
     await Promise.all(gameStates.map(gs => loadGameBallLog(gs.gameId)));
   }
 
-  renderLeagueList();
+  await renderLeagueList();
   await loadHomeStats();
+  saveHomeCache();
 }
 
 async function loadHomeStats() {
@@ -2351,6 +2415,7 @@ async function renderLeagueList() {
   for (const lg of leagues) {
     avgs[lg.id] = await getLeagueAverage(lg.id);
   }
+  leagueAvgs = avgs;
 
   list.innerHTML = leagues.map(lg => {
     const avg = avgs[lg.id];
@@ -2370,6 +2435,7 @@ async function renderLeagueList() {
 
   // Update practice average card
   const practiceAvg = await getPracticeAverage();
+  practiceAvgCached = practiceAvg;
   const practiceEl = document.getElementById('practice-avg');
   if (practiceEl) practiceEl.textContent = practiceAvg !== null ? Math.round(practiceAvg) : '—';
 }
@@ -3844,7 +3910,18 @@ function formatDate(dateStr) {
 // INIT
 // ============================================================
 (async function init() {
-  // Check existing session
+  // If a session token exists locally, paint cached data immediately so the
+  // home screen is visible while the async auth check resolves.
+  if (localStorage.getItem(BT_SESSION_KEY) && paintCachedHome()) {
+    document.getElementById('bottom-nav').style.display = '';
+    document.querySelectorAll('.screen').forEach(s => {
+      s.classList.remove('active');
+      if (s.id === 'screen-auth') s.style.display = 'none';
+    });
+    document.getElementById('screen-home').classList.add('active');
+    document.getElementById('nav-home').classList.add('active');
+  }
+
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) {
     currentUser = session.user;
