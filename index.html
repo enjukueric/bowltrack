@@ -658,6 +658,64 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
 }
 .plc-count { width: 28px; text-align: right; color: var(--text2); font-size: .75rem; flex-shrink: 0; }
 
+/* Lane pair cards */
+.lane-pair-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.lpc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.lpc-header:active { background: rgba(255,255,255,.04); }
+.lpc-name { font-size: .9rem; font-weight: 600; color: var(--text); }
+.lpc-games { font-size: .75rem; color: var(--text2); margin-left: 8px; }
+.lpc-avg { font-size: 1.1rem; font-weight: 700; color: var(--neon); }
+.lpc-detail {
+  display: none;
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--border);
+}
+.lpc-detail.open { display: block; }
+.lpc-lane-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.lpc-lane-name { font-size: .85rem; font-weight: 600; color: var(--neon2); }
+.lpc-lane-stats { display: flex; gap: 12px; align-items: center; font-size: .85rem; }
+.lpc-leaves { font-size: .75rem; color: var(--text2); padding-bottom: 6px; }
+.lpc-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* Speed input in pin area */
+.speed-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: .8rem;
+  color: var(--text2);
+}
+.speed-input-row input {
+  width: 68px;
+  text-align: center;
+  padding: 6px 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: .9rem;
+}
+
 /* Year comparison table */
 .year-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
 .year-table th {
@@ -1846,6 +1904,13 @@ select option { background: var(--bg2); }
         <option value="3" selected>3 Games</option>
       </select>
     </div>
+    <div class="form-group" id="session-lane-group" style="display:none;">
+      <label>Starting Lane <span style="color:var(--text2);font-size:.8rem;">(pair auto-assigned)</span></label>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <input type="number" id="session-lane-input" min="1" max="99" placeholder="e.g. 15" style="width:80px;" oninput="updateLanePreview()">
+        <div id="session-lane-preview" style="color:var(--neon);font-size:.9rem;font-weight:600;"></div>
+      </div>
+    </div>
     <div class="form-group">
       <label>Notes (optional)</label>
       <textarea id="session-notes-input" rows="2" placeholder="e.g. Week 12"></textarea>
@@ -2590,7 +2655,7 @@ async function loadSessions(leagueId) {
       <div class="session-header" onclick="toggleSession('${sess.id}')">
         <div>
           <div class="session-date">${dateStr}</div>
-          <div class="session-meta">${games.length} game${games.length!==1?'s':''} ${sess.notes ? '· '+esc(sess.notes) : ''}</div>
+          <div class="session-meta">${games.length} game${games.length!==1?'s':''}${sess.lane_number ? ' · Lanes '+sess.lane_number+'-'+(sess.lane_number+1) : ''}${sess.notes ? ' · '+esc(sess.notes) : ''}</div>
           ${laneChips ? `<div class="lane-chips">${laneChips}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -2616,10 +2681,28 @@ function toggleSession(id) {
   document.getElementById('sess-' + id)?.classList.toggle('expanded');
 }
 
+function updateLanePreview() {
+  const val = parseInt(document.getElementById('session-lane-input').value);
+  const prev = document.getElementById('session-lane-preview');
+  prev.textContent = val >= 1 ? `Lanes ${val} & ${val + 1}` : '';
+}
+
+function getGameLane(gameNum, laneNumber) {
+  if (!laneNumber) return null;
+  return gameNum % 2 === 1 ? laneNumber : laneNumber + 1;
+}
+
+function toggleLanePair(key) {
+  document.getElementById('lpc-' + key)?.classList.toggle('open');
+}
+
 function startNewSession() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('session-date-input').value = today;
   document.getElementById('session-notes-input').value = '';
+  document.getElementById('session-lane-input').value = '';
+  document.getElementById('session-lane-preview').textContent = '';
+  document.getElementById('session-lane-group').style.display = currentLeague ? '' : 'none';
   // Reset lane condition fields
   document.getElementById('lc-lanes-input').value   = '';
   document.getElementById('lc-notes-input').value   = '';
@@ -2642,6 +2725,8 @@ async function createSession() {
   const numGames = parseInt(document.getElementById('session-games-input').value) || 3;
   if (!date) { showToast('Please select a date', 'error'); return; }
 
+  const laneNumber = currentLeague ? (parseInt(document.getElementById('session-lane-input').value) || null) : null;
+
   // Lane conditions
   const lcPayload = {
     lanes:          document.getElementById('lc-lanes-input').value.trim() || null,
@@ -2649,6 +2734,7 @@ async function createSession() {
     pattern_length: document.getElementById('lc-length-val').value || null,
     condition:      document.getElementById('lc-cond-val').value || null,
     lane_notes:     document.getElementById('lc-notes-input').value.trim() || null,
+    lane_number:    laneNumber,
   };
 
   // Create session (league or practice)
@@ -2677,6 +2763,7 @@ async function createSession() {
     league_id:    currentLeague ? currentLeague.id : null,
     session_type: currentLeague ? 'league' : 'practice',
     date:         sessData.date,
+    lane_number:  laneNumber,
     games:        gamesData.sort((a,b) => a.game_number - b.game_number)
   };
 
@@ -2701,6 +2788,7 @@ function initFrames() {
     frameId:     null,
     roll1:       null, roll2: null, roll3: null,
     roll1_pins:  null, roll2_pins: null, roll3_pins: null,
+    roll1_speed: null, roll2_speed: null, roll3_speed: null,
     saved:       false
   }));
 }
@@ -2747,8 +2835,10 @@ function renderGameScreen() {
     let cls = '';
     if (i === activeGameIndex) cls = 'active';
     else if (gs.done) cls = 'done';
+    const lane = getGameLane(gs.gameNum, currentSession?.lane_number);
+    const laneLabel = lane ? `<br><span style="font-size:.7rem;opacity:.7;">Ln ${lane}</span>` : '';
     return `<button class="game-tab ${cls}" onclick="switchGame(${i})">
-      Game ${gs.gameNum}${gs.done && gs.score!=null ? '<br><span style="font-size:.75rem;">'+gs.score+'</span>' : ''}
+      Game ${gs.gameNum}${gs.done && gs.score!=null ? '<br><span style="font-size:.75rem;">'+gs.score+'</span>' : ''}${laneLabel}
     </button>`;
   }).join('');
 
@@ -2937,14 +3027,16 @@ function renderGameMeta(gs) {
   const league = leagues.find(l=>l.id===currentSession?.league_id);
   let handiHTML = '';
   if (league) {
-    // Use existing average for handicap calc (we'll use 0 as placeholder if none)
     const handi = gs._handi || 0;
     handiHTML = `<div class="meta-chip">Hdcp: <span>${handi}</span> | H-Score: <span>${score !== null ? score + handi : '—'}</span></div>`;
   }
+  const lane = getGameLane(gs.gameNum, currentSession?.lane_number);
+  const laneHTML = lane ? `<div class="meta-chip">Lane: <span>${lane}</span></div>` : '';
   return `
   <div class="game-meta">
     <div class="meta-chip">Score: <span>${score !== null ? score : '—'}</span></div>
     <div class="meta-chip">Max: <span>${maxPoss}</span></div>
+    ${laneHTML}
     ${handiHTML}
   </div>`;
 }
@@ -3019,6 +3111,11 @@ function renderPinArea(gs) {
   <div class="pin-area">
     <div class="pin-area-title">${rollLabel} — Tap pins left standing</div>
     <div class="pin-triangle">${pinsHTML}</div>
+    <div class="speed-input-row">
+      <span>Speed</span>
+      <input type="number" id="roll-speed-input" step="0.1" min="5" max="30" placeholder="mph">
+      <span>mph (optional)</span>
+    </div>
     <div class="pin-actions">
       <button class="pin-btn btn-clear" onclick="undoLastRoll()">Undo</button>
       <button class="pin-btn btn-clear" onclick="clearPins()">Clear</button>
@@ -3204,16 +3301,21 @@ async function confirmRoll() {
   const maxPins = getMaxPinsForRoll(gs, frame);
   if (count > maxPins) { showToast(`Max ${maxPins} pins on this roll`, 'error'); return; }
 
+  const speed = parseFloat(document.getElementById('roll-speed-input')?.value) || null;
+
   // Store roll data
   if (currentRoll === 1) {
     frame.roll1       = count;
     frame.roll1_pins  = pinsDown;
+    frame.roll1_speed = speed;
   } else if (currentRoll === 2) {
     frame.roll2       = count;
     frame.roll2_pins  = pinsDown;
+    frame.roll2_speed = speed;
   } else if (currentRoll === 3) {
     frame.roll3       = count;
     frame.roll3_pins  = pinsDown;
+    frame.roll3_speed = speed;
   }
 
   // Detect strike / spare for animation
@@ -3222,6 +3324,8 @@ async function confirmRoll() {
     setTimeout(() => triggerStrikeAnim(streak), 80);
   } else if (currentRoll === 2 && currentFrame < 10 && (frame.roll1 + count) === 10) {
     setTimeout(() => triggerStrikeAnim(0), 80); // spare
+  } else if (currentRoll === 2 && currentFrame < 10 && frame.roll1 > 0 && (frame.roll1 + count) < 10) {
+    setTimeout(() => triggerMissedSpareAnim(frame), 80); // missed spare trash talk
   }
 
   // Advance frame/roll
@@ -3432,6 +3536,9 @@ async function saveFrame(gs, frame) {
     roll1_pins:   frame.roll1_pins,
     roll2_pins:   frame.roll2_pins !== undefined ? frame.roll2_pins : null,
     roll3_pins:   frame.roll3_pins !== undefined ? frame.roll3_pins : null,
+    roll1_speed:  frame.roll1_speed !== undefined ? frame.roll1_speed : null,
+    roll2_speed:  frame.roll2_speed !== undefined ? frame.roll2_speed : null,
+    roll3_speed:  frame.roll3_speed !== undefined ? frame.roll3_speed : null,
   };
 
   if (!navigator.onLine) {
@@ -3552,7 +3659,7 @@ async function renderStatsContent() {
 
   // Load games with frames
   let gamesQuery = sb.from('games')
-    .select('id, total_score, game_number, sessions!inner(id, league_id, date, leagues!inner(user_id, handicap_base, handicap_pct, name))')
+    .select('id, total_score, game_number, sessions!inner(id, league_id, date, lane_number, leagues!inner(user_id, handicap_base, handicap_pct, name))')
     .eq('sessions.leagues.user_id', currentUser.id)
     .not('total_score', 'is', null);
 
@@ -3831,7 +3938,86 @@ async function renderStatsContent() {
   // Lane breakdown
   const laneBreakdownHTML = await renderLaneBreakdown(statsLeagueId);
 
-  content.innerHTML = statsGridHTML + laneBreakdownHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
+  // Build lane pair stats from games that have lane_number
+  const laneMap = {};
+  const gameIdToLane = {};
+  for (const g of games) {
+    const laneNum = g.sessions?.lane_number;
+    if (!laneNum) continue;
+    const pairKey = `${laneNum}-${laneNum + 1}`;
+    const gameLane = g.game_number % 2 === 1 ? laneNum : laneNum + 1;
+    gameIdToLane[g.id] = { pairKey, lane: gameLane };
+    if (!laneMap[pairKey]) {
+      laneMap[pairKey] = { laneA: laneNum, laneB: laneNum + 1, laneAScores: [], laneBScores: [] };
+    }
+    if (gameLane === laneNum) laneMap[pairKey].laneAScores.push(g.total_score);
+    else laneMap[pairKey].laneBScores.push(g.total_score);
+  }
+  const lanePinLeaves = {};
+  for (const fr of frames) {
+    const laneInfo = gameIdToLane[fr.game_id];
+    if (!laneInfo || fr.roll1 === 10) continue;
+    const knocked = new Set(fr.roll1_pins || []);
+    const remaining = [1,2,3,4,5,6,7,8,9,10].filter(p => !knocked.has(p));
+    const key = remaining.sort((a,b)=>a-b).join('-');
+    if (!key) continue;
+    if (!lanePinLeaves[laneInfo.pairKey]) lanePinLeaves[laneInfo.pairKey] = {};
+    const lk = `lane_${laneInfo.lane}`;
+    if (!lanePinLeaves[laneInfo.pairKey][lk]) lanePinLeaves[laneInfo.pairKey][lk] = {};
+    lanePinLeaves[laneInfo.pairKey][lk][key] = (lanePinLeaves[laneInfo.pairKey][lk][key] || 0) + 1;
+  }
+  const laneAvg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+  const laneSummaryHTML = Object.keys(laneMap).length ? `
+  <div class="stats-section">
+    <h3>Lane Summary</h3>
+    <div class="lane-pairs">
+      ${Object.entries(laneMap).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([pairKey, ld]) => {
+        const allScores = [...ld.laneAScores, ...ld.laneBScores];
+        const pairAvgVal = laneAvg(allScores);
+        const aAvg = laneAvg(ld.laneAScores);
+        const bAvg = laneAvg(ld.laneBScores);
+        const leavesA = lanePinLeaves[pairKey]?.[`lane_${ld.laneA}`] || {};
+        const leavesB = lanePinLeaves[pairKey]?.[`lane_${ld.laneB}`] || {};
+        const topA = Object.entries(leavesA).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const topB = Object.entries(leavesB).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const safeKey = pairKey.replace('-', '_');
+        return `
+        <div class="lane-pair-card">
+          <div class="lpc-header" onclick="toggleLanePair('${safeKey}')">
+            <div>
+              <span class="lpc-name">Lanes ${pairKey}</span>
+              <span class="lpc-games">${allScores.length} game${allScores.length!==1?'s':''}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="lpc-avg">${pairAvgVal !== null ? pairAvgVal : '—'}</span>
+              <div class="chevron"></div>
+            </div>
+          </div>
+          <div class="lpc-detail" id="lpc-${safeKey}">
+            <div class="lpc-lane-row">
+              <div class="lpc-lane-name">Lane ${ld.laneA}</div>
+              <div class="lpc-lane-stats">
+                <span>${aAvg !== null ? 'Avg '+aAvg : 'No data'}</span>
+                <span class="small">${ld.laneAScores.length} game${ld.laneAScores.length!==1?'s':''}</span>
+              </div>
+            </div>
+            ${topA.length ? `<div class="lpc-leaves">Top leaves: ${topA.map(([p,c])=>`${p} (${c}×)`).join(', ')}</div>` : ''}
+            <div class="lpc-divider"></div>
+            <div class="lpc-lane-row">
+              <div class="lpc-lane-name">Lane ${ld.laneB}</div>
+              <div class="lpc-lane-stats">
+                <span>${bAvg !== null ? 'Avg '+bAvg : 'No data'}</span>
+                <span class="small">${ld.laneBScores.length} game${ld.laneBScores.length!==1?'s':''}</span>
+              </div>
+            </div>
+            ${topB.length ? `<div class="lpc-leaves">Top leaves: ${topB.map(([p,c])=>`${p} (${c}×)`).join(', ')}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>` : '';
+
+  content.innerHTML = statsGridHTML + laneSummaryHTML + laneBreakdownHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
 }
 
 // ============================================================
@@ -5024,8 +5210,8 @@ function renderBallUsageTimeline(gs) {
 // ============================================================
 // STRIKE / TURKEY ANIMATIONS
 // ============================================================
-const STREAK_LABELS = ['','','DOUBLE!','TURKEY! 🦃','FOUR-BAGGER!','FIVE-BAGGER!','SIX PACK!','SEVEN!','EIGHT!','NINE!','TEN!','ELEVEN!','PERFECT!'];
-const STREAK_COLORS = ['','','#00e5ff','#ff6b35','#FFD700','#b44fff','#ff4081','#44ff88','#FFD700','#ff6b35','#FFD700','#FFD700','#FFD700'];
+const STREAK_LABELS = ['','','DOUBLE!','TURKEY! 🦃','HAM BONE! 🍖','FIVE-BAGGER!','SIX PACK! 🍺','SEVEN!','EIGHT!','NINE!','TEN!','ELEVEN!','PERFECT!'];
+const STREAK_COLORS = ['','','#00e5ff','#ff6b35','#ff9966','#b44fff','#4a90d9','#44ff88','#FFD700','#ff6b35','#FFD700','#FFD700','#FFD700'];
 
 function triggerStrikeAnim(streak) {
   const overlay = document.getElementById('strike-overlay');
@@ -5033,8 +5219,9 @@ function triggerStrikeAnim(streak) {
   const isSpare = streak === 0;
   const word    = isSpare ? 'SPARE!' : (streak === 1 ? 'STRIKE!' : STREAK_LABELS[streak] || `${streak} IN A ROW!`);
   const color   = isSpare ? 'var(--spare)' : (STREAK_COLORS[streak] || 'var(--strike)');
-  const sub     = !isSpare && streak >= 2 ? `${streak} strikes in a row` : '';
-  const emojis  = isSpare ? '✓' : streak >= 12 ? '🎳🎳🎳' : streak >= 6 ? '🔥🔥' : streak >= 3 ? '🦃' : '⚡';
+  const subMap  = { 3: 'Three in a row — Gobble Gobble!', 4: 'Four straight — Pig out!', 6: 'Crack a Busch Light!', 12: 'P-E-R-F-E-C-T' };
+  const sub     = !isSpare && streak >= 2 ? (subMap[streak] || `${streak} strikes in a row`) : '';
+  const emojis  = isSpare ? '✓' : streak >= 12 ? '🎳🎳🎳' : streak >= 6 ? '🍺🍺' : streak === 5 ? '🔥🔥' : streak === 4 ? '🍖' : streak >= 3 ? '🦃' : '⚡';
   overlay.innerHTML = `
     <div class="strike-word" style="color:${color}">${word}</div>
     ${sub ? `<div class="strike-streak" style="color:${color}">${sub}</div>` : ''}
@@ -5070,6 +5257,57 @@ function countConsecutiveStrikes(gs, upToFrame) {
     else break;
   }
   return n;
+}
+
+const MISSED_SPARE_10PIN = [
+  "Those 10 pins suck, huh?",
+  "The 10 pin just stood there and laughed.",
+  "You had ONE pin. The 10 wins again.",
+  "10 pin: 1. You: 0.",
+  "Classic. That's a classic 10 pin.",
+  "The 10 pin has no mercy. Never has.",
+];
+const MISSED_SPARE_7PIN = [
+  "The 7 pin corners you every time, huh?",
+  "The 7 just watched it sail on by.",
+  "Corner pin survival rate: 100%.",
+  "7 pin nods, still standing.",
+];
+const MISSED_SPARE_5PIN = [
+  "You must owe someone a beer.",
+  "The 5 pin. You missed the 5 pin.",
+  "That one's gonna haunt you.",
+];
+const MISSED_SPARE_GENERAL = [
+  "Maybe you should've thrown it better.",
+  "Your grandma picks that up.",
+  "Open frame. The scoresheet weeps.",
+  "Did you mean to leave those?",
+  "The pins are doing great, actually.",
+  "That's one way to score... just not a good one.",
+  "You'll get it next frame. Probably.",
+  "Open frame — classic move.",
+  "Spare: declined.",
+  "The lane gave you a chance. You said no.",
+  "Bold strategy leaving those.",
+  "Look, sometimes pins just win.",
+];
+
+function triggerMissedSpareAnim(frame) {
+  const leftStanding = [1,2,3,4,5,6,7,8,9,10].filter(p => !(frame.roll1_pins || []).includes(p));
+  let taunts = MISSED_SPARE_GENERAL;
+  if (leftStanding.length === 1 && leftStanding[0] === 10) taunts = MISSED_SPARE_10PIN;
+  else if (leftStanding.length === 1 && leftStanding[0] === 7) taunts = MISSED_SPARE_7PIN;
+  else if (leftStanding.length === 1 && leftStanding[0] === 5) taunts = MISSED_SPARE_5PIN;
+  const taunt = taunts[Math.floor(Math.random() * taunts.length)];
+  const overlay = document.getElementById('strike-overlay');
+  overlay.className = '';
+  overlay.innerHTML = `
+    <div class="strike-word" style="color:#ff6b6b">OPEN FRAME</div>
+    <div class="strike-streak" style="color:#ffaaaa">${taunt}</div>
+    <div class="strike-emoji">😬</div>`;
+  void overlay.offsetWidth;
+  overlay.classList.add('show');
 }
 
 // ============================================================
