@@ -1,5 +1,5 @@
 // Bowl Track Service Worker — handles caching + push notifications
-const CACHE = 'bowltrack-v4';
+const CACHE = 'bowltrack-v5';
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll([])));
