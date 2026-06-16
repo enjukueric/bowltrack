@@ -947,6 +947,43 @@ select option { background: var(--bg2); }
 }
 .session-card.expanded .chevron { transform: rotate(225deg); }
 
+/* Lane pair cards */
+.lane-pair-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.lpc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.lpc-header:active { background: rgba(255,255,255,.04); }
+.lpc-name { font-size: .9rem; font-weight: 600; color: var(--text); }
+.lpc-games { font-size: .75rem; color: var(--text2); margin-left: 8px; }
+.lpc-avg { font-size: 1.1rem; font-weight: 700; color: var(--neon); }
+.lpc-detail {
+  display: none;
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--border);
+}
+.lpc-detail.open { display: block; }
+.lpc-lane-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.lpc-lane-name { font-size: .85rem; font-weight: 600; color: var(--neon2); }
+.lpc-lane-stats { display: flex; gap: 12px; align-items: center; font-size: .85rem; }
+.lpc-leaves { font-size: .75rem; color: var(--text2); padding-bottom: 6px; }
+.lpc-divider { height: 1px; background: var(--border); margin: 4px 0; }
+
 /* no-games placeholder in game tab */
 .no-game-msg {
   text-align: center;
@@ -3587,6 +3624,16 @@ function abandonGame() {
   showScreen('home');
 }
 
+function parseLaneStart(str) {
+  if (!str) return null;
+  const m = str.match(/(\d+)/);
+  return m ? parseInt(m[1]) : null;
+}
+
+function toggleLanePair(key) {
+  document.getElementById('lpc-' + key)?.classList.toggle('open');
+}
+
 // ============================================================
 // STATS SCREEN
 // ============================================================
@@ -3625,7 +3672,7 @@ async function renderStatsContent() {
 
   // Load games with frames
   let gamesQuery = sb.from('games')
-    .select('id, total_score, game_number, sessions!inner(id, league_id, date, leagues!inner(user_id, handicap_base, handicap_pct, name))')
+    .select('id, total_score, game_number, sessions!inner(id, league_id, date, lanes, leagues!inner(user_id, handicap_base, handicap_pct, name))')
     .eq('sessions.leagues.user_id', currentUser.id)
     .not('total_score', 'is', null);
 
@@ -3901,10 +3948,88 @@ async function renderStatsContent() {
     </div>` : ''}
   </div>`;
 
-  // Lane breakdown
+  // Lane pair summary — per-lane averages from sessions that have a lanes field
+  const laneMap = {};
+  const gameIdToLane = {};
+  for (const g of games) {
+    const laneStart = parseLaneStart(g.sessions?.lanes);
+    if (!laneStart) continue;
+    const laneB = laneStart + 1;
+    const pairKey = `${laneStart}-${laneB}`;
+    const gameLane = g.game_number % 2 === 1 ? laneStart : laneB;
+    gameIdToLane[g.id] = { pairKey, lane: gameLane };
+    if (!laneMap[pairKey]) laneMap[pairKey] = { laneA: laneStart, laneB, laneAScores: [], laneBScores: [] };
+    if (gameLane === laneStart) laneMap[pairKey].laneAScores.push(g.total_score);
+    else laneMap[pairKey].laneBScores.push(g.total_score);
+  }
+  const lanePinLeaves = {};
+  for (const fr of frames) {
+    const laneInfo = gameIdToLane[fr.game_id];
+    if (!laneInfo || fr.roll1 === 10) continue;
+    const knocked = new Set(fr.roll1_pins || []);
+    const remaining = [1,2,3,4,5,6,7,8,9,10].filter(p => !knocked.has(p));
+    const key = remaining.sort((a,b)=>a-b).join('-');
+    if (!key) continue;
+    if (!lanePinLeaves[laneInfo.pairKey]) lanePinLeaves[laneInfo.pairKey] = {};
+    const lk = `lane_${laneInfo.lane}`;
+    if (!lanePinLeaves[laneInfo.pairKey][lk]) lanePinLeaves[laneInfo.pairKey][lk] = {};
+    lanePinLeaves[laneInfo.pairKey][lk][key] = (lanePinLeaves[laneInfo.pairKey][lk][key] || 0) + 1;
+  }
+  const _laneAvg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
+  const laneSummaryHTML = Object.keys(laneMap).length ? `
+  <div class="stats-section">
+    <h3>Lane Summary</h3>
+    <div class="lane-pairs">
+      ${Object.entries(laneMap).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([pairKey, ld]) => {
+        const allScores = [...ld.laneAScores, ...ld.laneBScores];
+        const pairAvgVal = _laneAvg(allScores);
+        const aAvg = _laneAvg(ld.laneAScores);
+        const bAvg = _laneAvg(ld.laneBScores);
+        const leavesA = lanePinLeaves[pairKey]?.[`lane_${ld.laneA}`] || {};
+        const leavesB = lanePinLeaves[pairKey]?.[`lane_${ld.laneB}`] || {};
+        const topA = Object.entries(leavesA).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const topB = Object.entries(leavesB).sort((a,b)=>b[1]-a[1]).slice(0,3);
+        const safeKey = pairKey.replace('-', '_');
+        return `
+        <div class="lane-pair-card">
+          <div class="lpc-header" onclick="toggleLanePair('${safeKey}')">
+            <div>
+              <span class="lpc-name">Lanes ${pairKey}</span>
+              <span class="lpc-games">${allScores.length} game${allScores.length!==1?'s':''}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="lpc-avg">${pairAvgVal !== null ? pairAvgVal : '—'}</span>
+              <div class="chevron"></div>
+            </div>
+          </div>
+          <div class="lpc-detail" id="lpc-${safeKey}">
+            <div class="lpc-lane-row">
+              <div class="lpc-lane-name">Lane ${ld.laneA}</div>
+              <div class="lpc-lane-stats">
+                <span>${aAvg !== null ? 'Avg '+aAvg : 'No data'}</span>
+                <span class="small">${ld.laneAScores.length} game${ld.laneAScores.length!==1?'s':''}</span>
+              </div>
+            </div>
+            ${topA.length ? `<div class="lpc-leaves">Top leaves: ${topA.map(([p,c])=>`${p} (${c}×)`).join(', ')}</div>` : ''}
+            <div class="lpc-divider"></div>
+            <div class="lpc-lane-row">
+              <div class="lpc-lane-name">Lane ${ld.laneB}</div>
+              <div class="lpc-lane-stats">
+                <span>${bAvg !== null ? 'Avg '+bAvg : 'No data'}</span>
+                <span class="small">${ld.laneBScores.length} game${ld.laneBScores.length!==1?'s':''}</span>
+              </div>
+            </div>
+            ${topB.length ? `<div class="lpc-leaves">Top leaves: ${topB.map(([p,c])=>`${p} (${c}×)`).join(', ')}</div>` : ''}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>` : '';
+
+  // Lane breakdown (pattern/condition analysis)
   const laneBreakdownHTML = await renderLaneBreakdown(statsLeagueId);
 
-  content.innerHTML = statsGridHTML + laneBreakdownHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
+  content.innerHTML = statsGridHTML + laneSummaryHTML + laneBreakdownHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
 }
 
 // ============================================================
