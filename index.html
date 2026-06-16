@@ -119,7 +119,7 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
    SCREENS
    ============================================================ */
 .screen { display: none; padding: 0; }
-.screen.active { display: block; }
+.screen.active { display: block; min-height: 100%; }
 
 /* ============================================================
    AUTH SCREEN
@@ -657,64 +657,6 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
   padding-left: 6px;
 }
 .plc-count { width: 28px; text-align: right; color: var(--text2); font-size: .75rem; flex-shrink: 0; }
-
-/* Lane pair cards */
-.lane-pair-card {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  overflow: hidden;
-}
-.lpc-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 14px;
-  cursor: pointer;
-  user-select: none;
-}
-.lpc-header:active { background: rgba(255,255,255,.04); }
-.lpc-name { font-size: .9rem; font-weight: 600; color: var(--text); }
-.lpc-games { font-size: .75rem; color: var(--text2); margin-left: 8px; }
-.lpc-avg { font-size: 1.1rem; font-weight: 700; color: var(--neon); }
-.lpc-detail {
-  display: none;
-  padding: 0 14px 14px;
-  border-top: 1px solid var(--border);
-}
-.lpc-detail.open { display: block; }
-.lpc-lane-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 0;
-}
-.lpc-lane-name { font-size: .85rem; font-weight: 600; color: var(--neon2); }
-.lpc-lane-stats { display: flex; gap: 12px; align-items: center; font-size: .85rem; }
-.lpc-leaves { font-size: .75rem; color: var(--text2); padding-bottom: 6px; }
-.lpc-divider { height: 1px; background: var(--border); margin: 4px 0; }
-
-/* Speed input in pin area */
-.speed-input-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  font-size: .8rem;
-  color: var(--text2);
-}
-.speed-input-row input {
-  width: 68px;
-  text-align: center;
-  padding: 6px 8px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  font-size: .9rem;
-}
 
 /* Year comparison table */
 .year-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
@@ -1668,14 +1610,27 @@ select option { background: var(--bg2); }
       </div>
 
       <div class="section-title" style="margin-top:8px;">Practice</div>
-      <div class="league-card" onclick="openPracticeSessions()" style="cursor:pointer;">
-        <div class="lc-info">
-          <div class="lc-name">Practice Sessions</div>
-          <div class="lc-meta">Open bowling &amp; solo practice</div>
+      <div class="league-list" style="padding-bottom:0;">
+        <div class="league-card" onclick="openPracticeSessions()" style="cursor:pointer;">
+          <div class="lc-info">
+            <div class="lc-name">Practice Sessions</div>
+            <div class="lc-meta">Open bowling &amp; solo practice</div>
+          </div>
+          <div>
+            <div class="lc-avg" id="practice-avg">—</div>
+            <div class="lc-avg-lbl">average</div>
+          </div>
         </div>
-        <div>
-          <div class="lc-avg" id="practice-avg">—</div>
-          <div class="lc-avg-lbl">average</div>
+      </div>
+
+      <div class="section-title" style="margin-top:8px;">Sky Lanes</div>
+      <div class="league-list" style="padding-bottom:0;">
+        <div class="league-card" onclick="openLaneTalkImport()" style="cursor:pointer;">
+          <div class="lc-info">
+            <div class="lc-name">Import Recent Games</div>
+            <div class="lc-meta">Pull completed scores from Sky Lanes</div>
+          </div>
+          <div class="lc-avg" style="color:var(--neon);font-size:1.1rem;">↓</div>
         </div>
       </div>
 
@@ -1904,13 +1859,6 @@ select option { background: var(--bg2); }
         <option value="3" selected>3 Games</option>
       </select>
     </div>
-    <div class="form-group" id="session-lane-group" style="display:none;">
-      <label>Starting Lane <span style="color:var(--text2);font-size:.8rem;">(pair auto-assigned)</span></label>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <input type="number" id="session-lane-input" min="1" max="99" placeholder="e.g. 15" style="width:80px;" oninput="updateLanePreview()">
-        <div id="session-lane-preview" style="color:var(--neon);font-size:.9rem;font-weight:600;"></div>
-      </div>
-    </div>
     <div class="form-group">
       <label>Notes (optional)</label>
       <textarea id="session-notes-input" rows="2" placeholder="e.g. Week 12"></textarea>
@@ -2123,6 +2071,50 @@ select option { background: var(--bg2); }
 
 <!-- TOAST -->
 <div id="toast"></div>
+
+<!-- MODAL: LaneTalk Import -->
+<div class="modal-overlay" id="modal-lanetalk">
+  <div class="modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <h3 id="lt-modal-title">Import from Sky Lanes</h3>
+      <button onclick="closeModal('modal-lanetalk')" style="font-size:1.2rem;color:var(--text2);padding:4px 8px;">✕</button>
+    </div>
+    <!-- Step 1: loading / player list -->
+    <div id="lt-step-1">
+      <div id="lt-loading" style="text-align:center;padding:32px 0;">
+        <div class="spinner"></div>
+        <div class="small" style="margin-top:12px;color:var(--text2);">Fetching recent games…</div>
+      </div>
+      <div id="lt-player-list" style="display:none;">
+        <div class="small" style="color:var(--text2);margin-bottom:12px;">Select your name to import those games:</div>
+        <div id="lt-players"></div>
+      </div>
+      <div id="lt-error" style="display:none;color:var(--danger);padding:16px;text-align:center;"></div>
+    </div>
+    <!-- Step 2: confirm import -->
+    <div id="lt-step-2" style="display:none;">
+      <div id="lt-selected-games" style="margin-bottom:16px;"></div>
+      <div class="form-group">
+        <label>Session Type</label>
+        <select id="lt-session-type">
+          <option value="practice">Practice</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="lt-date-input">
+      </div>
+      <div class="form-group">
+        <label>Notes (optional)</label>
+        <input type="text" id="lt-notes-input" placeholder="e.g. Monday night open bowling">
+      </div>
+      <div class="modal-btns">
+        <button class="btn-secondary" onclick="ltBackToList()">Back</button>
+        <button class="btn-primary" onclick="confirmLaneTalkImport()">Import</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2655,7 +2647,7 @@ async function loadSessions(leagueId) {
       <div class="session-header" onclick="toggleSession('${sess.id}')">
         <div>
           <div class="session-date">${dateStr}</div>
-          <div class="session-meta">${games.length} game${games.length!==1?'s':''}${sess.lane_number ? ' · Lanes '+sess.lane_number+'-'+(sess.lane_number+1) : ''}${sess.notes ? ' · '+esc(sess.notes) : ''}</div>
+          <div class="session-meta">${games.length} game${games.length!==1?'s':''} ${sess.notes ? '· '+esc(sess.notes) : ''}</div>
           ${laneChips ? `<div class="lane-chips">${laneChips}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -2681,28 +2673,10 @@ function toggleSession(id) {
   document.getElementById('sess-' + id)?.classList.toggle('expanded');
 }
 
-function updateLanePreview() {
-  const val = parseInt(document.getElementById('session-lane-input').value);
-  const prev = document.getElementById('session-lane-preview');
-  prev.textContent = val >= 1 ? `Lanes ${val} & ${val + 1}` : '';
-}
-
-function getGameLane(gameNum, laneNumber) {
-  if (!laneNumber) return null;
-  return gameNum % 2 === 1 ? laneNumber : laneNumber + 1;
-}
-
-function toggleLanePair(key) {
-  document.getElementById('lpc-' + key)?.classList.toggle('open');
-}
-
 function startNewSession() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('session-date-input').value = today;
   document.getElementById('session-notes-input').value = '';
-  document.getElementById('session-lane-input').value = '';
-  document.getElementById('session-lane-preview').textContent = '';
-  document.getElementById('session-lane-group').style.display = currentLeague ? '' : 'none';
   // Reset lane condition fields
   document.getElementById('lc-lanes-input').value   = '';
   document.getElementById('lc-notes-input').value   = '';
@@ -2725,8 +2699,6 @@ async function createSession() {
   const numGames = parseInt(document.getElementById('session-games-input').value) || 3;
   if (!date) { showToast('Please select a date', 'error'); return; }
 
-  const laneNumber = currentLeague ? (parseInt(document.getElementById('session-lane-input').value) || null) : null;
-
   // Lane conditions
   const lcPayload = {
     lanes:          document.getElementById('lc-lanes-input').value.trim() || null,
@@ -2734,7 +2706,6 @@ async function createSession() {
     pattern_length: document.getElementById('lc-length-val').value || null,
     condition:      document.getElementById('lc-cond-val').value || null,
     lane_notes:     document.getElementById('lc-notes-input').value.trim() || null,
-    lane_number:    laneNumber,
   };
 
   // Create session (league or practice)
@@ -2763,7 +2734,6 @@ async function createSession() {
     league_id:    currentLeague ? currentLeague.id : null,
     session_type: currentLeague ? 'league' : 'practice',
     date:         sessData.date,
-    lane_number:  laneNumber,
     games:        gamesData.sort((a,b) => a.game_number - b.game_number)
   };
 
@@ -2788,7 +2758,6 @@ function initFrames() {
     frameId:     null,
     roll1:       null, roll2: null, roll3: null,
     roll1_pins:  null, roll2_pins: null, roll3_pins: null,
-    roll1_speed: null, roll2_speed: null, roll3_speed: null,
     saved:       false
   }));
 }
@@ -2835,10 +2804,8 @@ function renderGameScreen() {
     let cls = '';
     if (i === activeGameIndex) cls = 'active';
     else if (gs.done) cls = 'done';
-    const lane = getGameLane(gs.gameNum, currentSession?.lane_number);
-    const laneLabel = lane ? `<br><span style="font-size:.7rem;opacity:.7;">Ln ${lane}</span>` : '';
     return `<button class="game-tab ${cls}" onclick="switchGame(${i})">
-      Game ${gs.gameNum}${gs.done && gs.score!=null ? '<br><span style="font-size:.75rem;">'+gs.score+'</span>' : ''}${laneLabel}
+      Game ${gs.gameNum}${gs.done && gs.score!=null ? '<br><span style="font-size:.75rem;">'+gs.score+'</span>' : ''}
     </button>`;
   }).join('');
 
@@ -3027,16 +2994,14 @@ function renderGameMeta(gs) {
   const league = leagues.find(l=>l.id===currentSession?.league_id);
   let handiHTML = '';
   if (league) {
+    // Use existing average for handicap calc (we'll use 0 as placeholder if none)
     const handi = gs._handi || 0;
     handiHTML = `<div class="meta-chip">Hdcp: <span>${handi}</span> | H-Score: <span>${score !== null ? score + handi : '—'}</span></div>`;
   }
-  const lane = getGameLane(gs.gameNum, currentSession?.lane_number);
-  const laneHTML = lane ? `<div class="meta-chip">Lane: <span>${lane}</span></div>` : '';
   return `
   <div class="game-meta">
     <div class="meta-chip">Score: <span>${score !== null ? score : '—'}</span></div>
     <div class="meta-chip">Max: <span>${maxPoss}</span></div>
-    ${laneHTML}
     ${handiHTML}
   </div>`;
 }
@@ -3111,11 +3076,6 @@ function renderPinArea(gs) {
   <div class="pin-area">
     <div class="pin-area-title">${rollLabel} — Tap pins left standing</div>
     <div class="pin-triangle">${pinsHTML}</div>
-    <div class="speed-input-row">
-      <span>Speed</span>
-      <input type="number" id="roll-speed-input" step="0.1" min="5" max="30" placeholder="mph">
-      <span>mph (optional)</span>
-    </div>
     <div class="pin-actions">
       <button class="pin-btn btn-clear" onclick="undoLastRoll()">Undo</button>
       <button class="pin-btn btn-clear" onclick="clearPins()">Clear</button>
@@ -3301,21 +3261,16 @@ async function confirmRoll() {
   const maxPins = getMaxPinsForRoll(gs, frame);
   if (count > maxPins) { showToast(`Max ${maxPins} pins on this roll`, 'error'); return; }
 
-  const speed = parseFloat(document.getElementById('roll-speed-input')?.value) || null;
-
   // Store roll data
   if (currentRoll === 1) {
     frame.roll1       = count;
     frame.roll1_pins  = pinsDown;
-    frame.roll1_speed = speed;
   } else if (currentRoll === 2) {
     frame.roll2       = count;
     frame.roll2_pins  = pinsDown;
-    frame.roll2_speed = speed;
   } else if (currentRoll === 3) {
     frame.roll3       = count;
     frame.roll3_pins  = pinsDown;
-    frame.roll3_speed = speed;
   }
 
   // Detect strike / spare for animation
@@ -3536,9 +3491,6 @@ async function saveFrame(gs, frame) {
     roll1_pins:   frame.roll1_pins,
     roll2_pins:   frame.roll2_pins !== undefined ? frame.roll2_pins : null,
     roll3_pins:   frame.roll3_pins !== undefined ? frame.roll3_pins : null,
-    roll1_speed:  frame.roll1_speed !== undefined ? frame.roll1_speed : null,
-    roll2_speed:  frame.roll2_speed !== undefined ? frame.roll2_speed : null,
-    roll3_speed:  frame.roll3_speed !== undefined ? frame.roll3_speed : null,
   };
 
   if (!navigator.onLine) {
@@ -3659,7 +3611,7 @@ async function renderStatsContent() {
 
   // Load games with frames
   let gamesQuery = sb.from('games')
-    .select('id, total_score, game_number, sessions!inner(id, league_id, date, lane_number, leagues!inner(user_id, handicap_base, handicap_pct, name))')
+    .select('id, total_score, game_number, sessions!inner(id, league_id, date, leagues!inner(user_id, handicap_base, handicap_pct, name))')
     .eq('sessions.leagues.user_id', currentUser.id)
     .not('total_score', 'is', null);
 
@@ -3938,86 +3890,7 @@ async function renderStatsContent() {
   // Lane breakdown
   const laneBreakdownHTML = await renderLaneBreakdown(statsLeagueId);
 
-  // Build lane pair stats from games that have lane_number
-  const laneMap = {};
-  const gameIdToLane = {};
-  for (const g of games) {
-    const laneNum = g.sessions?.lane_number;
-    if (!laneNum) continue;
-    const pairKey = `${laneNum}-${laneNum + 1}`;
-    const gameLane = g.game_number % 2 === 1 ? laneNum : laneNum + 1;
-    gameIdToLane[g.id] = { pairKey, lane: gameLane };
-    if (!laneMap[pairKey]) {
-      laneMap[pairKey] = { laneA: laneNum, laneB: laneNum + 1, laneAScores: [], laneBScores: [] };
-    }
-    if (gameLane === laneNum) laneMap[pairKey].laneAScores.push(g.total_score);
-    else laneMap[pairKey].laneBScores.push(g.total_score);
-  }
-  const lanePinLeaves = {};
-  for (const fr of frames) {
-    const laneInfo = gameIdToLane[fr.game_id];
-    if (!laneInfo || fr.roll1 === 10) continue;
-    const knocked = new Set(fr.roll1_pins || []);
-    const remaining = [1,2,3,4,5,6,7,8,9,10].filter(p => !knocked.has(p));
-    const key = remaining.sort((a,b)=>a-b).join('-');
-    if (!key) continue;
-    if (!lanePinLeaves[laneInfo.pairKey]) lanePinLeaves[laneInfo.pairKey] = {};
-    const lk = `lane_${laneInfo.lane}`;
-    if (!lanePinLeaves[laneInfo.pairKey][lk]) lanePinLeaves[laneInfo.pairKey][lk] = {};
-    lanePinLeaves[laneInfo.pairKey][lk][key] = (lanePinLeaves[laneInfo.pairKey][lk][key] || 0) + 1;
-  }
-  const laneAvg = arr => arr.length ? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length) : null;
-  const laneSummaryHTML = Object.keys(laneMap).length ? `
-  <div class="stats-section">
-    <h3>Lane Summary</h3>
-    <div class="lane-pairs">
-      ${Object.entries(laneMap).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).map(([pairKey, ld]) => {
-        const allScores = [...ld.laneAScores, ...ld.laneBScores];
-        const pairAvgVal = laneAvg(allScores);
-        const aAvg = laneAvg(ld.laneAScores);
-        const bAvg = laneAvg(ld.laneBScores);
-        const leavesA = lanePinLeaves[pairKey]?.[`lane_${ld.laneA}`] || {};
-        const leavesB = lanePinLeaves[pairKey]?.[`lane_${ld.laneB}`] || {};
-        const topA = Object.entries(leavesA).sort((a,b)=>b[1]-a[1]).slice(0,3);
-        const topB = Object.entries(leavesB).sort((a,b)=>b[1]-a[1]).slice(0,3);
-        const safeKey = pairKey.replace('-', '_');
-        return `
-        <div class="lane-pair-card">
-          <div class="lpc-header" onclick="toggleLanePair('${safeKey}')">
-            <div>
-              <span class="lpc-name">Lanes ${pairKey}</span>
-              <span class="lpc-games">${allScores.length} game${allScores.length!==1?'s':''}</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span class="lpc-avg">${pairAvgVal !== null ? pairAvgVal : '—'}</span>
-              <div class="chevron"></div>
-            </div>
-          </div>
-          <div class="lpc-detail" id="lpc-${safeKey}">
-            <div class="lpc-lane-row">
-              <div class="lpc-lane-name">Lane ${ld.laneA}</div>
-              <div class="lpc-lane-stats">
-                <span>${aAvg !== null ? 'Avg '+aAvg : 'No data'}</span>
-                <span class="small">${ld.laneAScores.length} game${ld.laneAScores.length!==1?'s':''}</span>
-              </div>
-            </div>
-            ${topA.length ? `<div class="lpc-leaves">Top leaves: ${topA.map(([p,c])=>`${p} (${c}×)`).join(', ')}</div>` : ''}
-            <div class="lpc-divider"></div>
-            <div class="lpc-lane-row">
-              <div class="lpc-lane-name">Lane ${ld.laneB}</div>
-              <div class="lpc-lane-stats">
-                <span>${bAvg !== null ? 'Avg '+bAvg : 'No data'}</span>
-                <span class="small">${ld.laneBScores.length} game${ld.laneBScores.length!==1?'s':''}</span>
-              </div>
-            </div>
-            ${topB.length ? `<div class="lpc-leaves">Top leaves: ${topB.map(([p,c])=>`${p} (${c}×)`).join(', ')}</div>` : ''}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>` : '';
-
-  content.innerHTML = statsGridHTML + laneSummaryHTML + laneBreakdownHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
+  content.innerHTML = statsGridHTML + laneBreakdownHTML + spareHTML + pinLeaveHTML + yearHTML + recentHTML;
 }
 
 // ============================================================
@@ -5720,6 +5593,134 @@ async function renderLaneBreakdown(leagueId) {
     ${patternRows ? `<div class="lb-heading">By Pattern Type</div>${patternRows}` : ''}
     ${condRows   ? `<div class="lb-heading" style="margin-top:14px;">By Lane Condition</div>${condRows}` : ''}
   </div>`;
+}
+
+// ============================================================
+// LANETALK IMPORT (Sky Lanes — completed games)
+// ============================================================
+const LT_GUID   = '23625f6e-4c70-11ec-88ca-0a1eb89bc00c';
+const LT_APIKEY = '8tLtPc8UwWvdvbpzRIr0ifCWy250TXUXrGUn';
+const LT_FETCH_COUNT = 30; // how many recent entries to pull
+let ltSelectedEntry = null; // the blockId entry user chose
+
+async function openLaneTalkImport() {
+  ltSelectedEntry = null;
+  document.getElementById('lt-step-1').style.display = '';
+  document.getElementById('lt-step-2').style.display = 'none';
+  document.getElementById('lt-loading').style.display = '';
+  document.getElementById('lt-player-list').style.display = 'none';
+  document.getElementById('lt-error').style.display = 'none';
+  document.getElementById('lt-modal-title').textContent = 'Import from Sky Lanes';
+  openModal('modal-lanetalk');
+
+  try {
+    const res = await fetch(
+      `https://api.lanetalk.com/v1/bowlingcenters/${LT_GUID}/completed/${LT_FETCH_COUNT}`,
+      { headers: { 'apikey': LT_APIKEY } }
+    );
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) throw new Error('No recent games found');
+    ltRenderPlayerList(data);
+  } catch(e) {
+    document.getElementById('lt-loading').style.display = 'none';
+    const errEl = document.getElementById('lt-error');
+    errEl.style.display = '';
+    errEl.textContent = `Could not load games: ${e.message}`;
+  }
+}
+
+function ltRenderPlayerList(entries) {
+  document.getElementById('lt-loading').style.display = 'none';
+  document.getElementById('lt-player-list').style.display = '';
+
+  // Sort by most recent modified
+  entries.sort((a, b) => (b.modified || 0) - (a.modified || 0));
+
+  const html = entries.map(e => {
+    const scores = (e.gameScores || []).join(', ');
+    const total  = e.totalScore || e.gameScores?.reduce((s,v)=>s+v,0) || '—';
+    const teamStr = e.teamName ? `<span style="color:var(--text2);font-size:.75rem;"> · ${esc(e.teamName)}</span>` : '';
+    return `<div class="league-card" style="margin-bottom:8px;cursor:pointer;" onclick="ltSelectEntry(${JSON.stringify(e).replace(/"/g,'&quot;')})">
+      <div class="lc-info">
+        <div class="lc-name">${esc(e.playerName || 'Unknown')}${teamStr}</div>
+        <div class="lc-meta">Games: ${scores || '—'}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="lc-avg">${total}</div>
+        <div class="lc-avg-lbl">total</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('lt-players').innerHTML = html;
+}
+
+function ltSelectEntry(entry) {
+  ltSelectedEntry = entry;
+  document.getElementById('lt-modal-title').textContent = `Import: ${entry.playerName}`;
+  document.getElementById('lt-step-1').style.display = 'none';
+  document.getElementById('lt-step-2').style.display = '';
+
+  // Populate league options
+  const sel = document.getElementById('lt-session-type');
+  sel.innerHTML = '<option value="practice">Practice</option>' +
+    (leagues||[]).map(l => `<option value="${l.id}">${esc(l.name)}</option>`).join('');
+
+  // Default date to today
+  document.getElementById('lt-date-input').value = new Date().toISOString().slice(0,10);
+  document.getElementById('lt-notes-input').value = entry.teamName || '';
+
+  // Show game preview
+  const scores = entry.gameScores || [];
+  const preview = scores.map((s,i) =>
+    `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="color:var(--text2);">Game ${i+1}</span>
+      <span style="font-weight:600;font-size:1.1rem;">${s}</span>
+    </div>`
+  ).join('');
+  document.getElementById('lt-selected-games').innerHTML = `
+    <div style="background:var(--bg3);border-radius:var(--radius);padding:12px;">
+      <div class="small" style="color:var(--text2);margin-bottom:4px;">${scores.length} game${scores.length!==1?'s':''} · Total: ${entry.totalScore || scores.reduce((a,b)=>a+b,0)}</div>
+      ${preview}
+    </div>`;
+}
+
+function ltBackToList() {
+  document.getElementById('lt-step-1').style.display = '';
+  document.getElementById('lt-step-2').style.display = 'none';
+  document.getElementById('lt-modal-title').textContent = 'Import from Sky Lanes';
+}
+
+async function confirmLaneTalkImport() {
+  if (!ltSelectedEntry) return;
+  const date = document.getElementById('lt-date-input').value;
+  if (!date) { showToast('Please select a date', 'error'); return; }
+
+  const typeVal = document.getElementById('lt-session-type').value;
+  const notes   = document.getElementById('lt-notes-input').value.trim();
+  const scores  = ltSelectedEntry.gameScores || [];
+  if (!scores.length) { showToast('No game scores to import', 'error'); return; }
+
+  const isLeague = typeVal !== 'practice';
+  const insertData = isLeague
+    ? { league_id: typeVal, user_id: currentUser.id, date, notes, session_type: 'league' }
+    : { user_id: currentUser.id, date, notes, session_type: 'practice' };
+
+  const { data: sessData, error: sessErr } = await sb.from('sessions').insert(insertData).select().single();
+  if (sessErr) { showToast('Error creating session', 'error'); return; }
+
+  const gameInserts = scores.map((score, i) => ({
+    session_id: sessData.id,
+    game_number: i + 1,
+    total_score: score
+  }));
+  const { error: gamesErr } = await sb.from('games').insert(gameInserts);
+  if (gamesErr) { showToast('Error saving games', 'error'); return; }
+
+  closeModal('modal-lanetalk');
+  showToast(`Imported ${scores.length} game${scores.length!==1?'s':''} for ${ltSelectedEntry.playerName}!`, 'success');
+  await loadHomeData();
 }
 
 // Intercept showScreen to load handicap when going to game
