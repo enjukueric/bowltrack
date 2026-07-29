@@ -1714,7 +1714,10 @@ select option { background: var(--bg2); }
           <h2 id="sessions-title">Sessions</h2>
           <div class="subtitle" id="sessions-subtitle"></div>
         </div>
-        <button class="btn-secondary" style="padding:8px 12px;font-size:.8rem;" onclick="showScreen('home')">Back</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-secondary" id="sessions-note-btn" style="padding:8px 12px;font-size:.8rem;display:none;" onclick="openLeagueNoteModal()">📝 Note</button>
+          <button class="btn-secondary" style="padding:8px 12px;font-size:.8rem;" onclick="showScreen('home')">Back</button>
+        </div>
       </div>
       <div class="sessions-container" id="sessions-container">
         <div class="spinner"></div>
@@ -1949,6 +1952,32 @@ select option { background: var(--bg2); }
     <div class="modal-btns">
       <button class="btn-secondary" onclick="closeModal('modal-session')">Cancel</button>
       <button class="btn-primary" onclick="createSession()">Start Bowling!</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Note for Next Time (league) -->
+<div class="modal-overlay" id="modal-league-note">
+  <div class="modal">
+    <h3>Note for Next Time</h3>
+    <div class="form-group">
+      <label>Reminder for your next league session</label>
+      <textarea id="league-note-input" rows="3" placeholder="e.g. Stand 2 boards left of practice position"></textarea>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-league-note')">Cancel</button>
+      <button class="btn-primary" onclick="saveLeagueNote()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: League Reminder Popup (shown when starting the next league session) -->
+<div class="modal-overlay" id="modal-league-reminder">
+  <div class="modal">
+    <h3>🔔 Reminder from Last Time</h3>
+    <p id="league-reminder-text" style="white-space:pre-wrap;line-height:1.5;"></p>
+    <div class="modal-btns">
+      <button class="btn-primary" onclick="dismissLeagueReminder()">Got it</button>
     </div>
   </div>
 </div>
@@ -2423,6 +2452,7 @@ function closeModal(id) {
 
 // Close modal on overlay click
 document.querySelectorAll('.modal-overlay').forEach(ov => {
+  if (ov.id === 'modal-league-reminder') return; // must be dismissed via the "Got it" button
   ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
 });
 
@@ -2633,6 +2663,7 @@ async function openLeagueSessions(leagueId) {
   document.getElementById('sessions-title').textContent = currentLeague.name;
   document.getElementById('sessions-subtitle').textContent = `Hdcp base ${currentLeague.handicap_base} @ ${currentLeague.handicap_pct}%`;
   document.getElementById('new-session-fab').onclick = startNewSession;
+  document.getElementById('sessions-note-btn').style.display = 'inline-block';
   await loadSessions(leagueId);
 }
 
@@ -2642,7 +2673,46 @@ async function openPracticeSessions() {
   document.getElementById('sessions-title').textContent = 'Practice';
   document.getElementById('sessions-subtitle').textContent = 'Open bowling & solo practice';
   document.getElementById('new-session-fab').onclick = startNewSession;
+  document.getElementById('sessions-note-btn').style.display = 'none';
   await loadSessions(null);
+}
+
+// ============================================================
+// LEAGUE "NOTE FOR NEXT TIME" REMINDER
+// ============================================================
+function openLeagueNoteModal() {
+  if (!currentLeague) return;
+  document.getElementById('league-note-input').value = currentLeague.next_note || '';
+  openModal('modal-league-note');
+}
+
+async function saveLeagueNote() {
+  if (!currentLeague) return;
+  const note = document.getElementById('league-note-input').value.trim() || null;
+  const { error } = await sb.from('leagues').update({ next_note: note }).eq('id', currentLeague.id);
+  if (error) { showToast('Error saving note', 'error'); return; }
+  currentLeague.next_note = note;
+  const lg = leagues.find(l => l.id === currentLeague.id);
+  if (lg) lg.next_note = note;
+  closeModal('modal-league-note');
+  showToast(note ? 'Reminder saved for next time' : 'Reminder cleared', 'success');
+}
+
+function maybeShowLeagueReminder() {
+  if (!currentLeague || !currentLeague.next_note) return;
+  document.getElementById('league-reminder-text').textContent = currentLeague.next_note;
+  openModal('modal-league-reminder');
+}
+
+async function dismissLeagueReminder() {
+  closeModal('modal-league-reminder');
+  if (!currentLeague) return;
+  const leagueId = currentLeague.id;
+  const { error } = await sb.from('leagues').update({ next_note: null }).eq('id', leagueId);
+  if (error) { console.error('dismissLeagueReminder error:', error); return; }
+  currentLeague.next_note = null;
+  const lg = leagues.find(l => l.id === leagueId);
+  if (lg) lg.next_note = null;
 }
 
 async function loadSessions(leagueId) {
@@ -2801,6 +2871,7 @@ async function createSession() {
   await loadBalls();
   showScreen('game');
   renderGameScreen();
+  maybeShowLeagueReminder();
 }
 
 function initFrames() {
