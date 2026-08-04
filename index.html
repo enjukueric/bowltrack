@@ -1884,9 +1884,16 @@ select option { background: var(--bg2); }
       <input type="text" id="league-name-input" placeholder="Tuesday Winter League 2026" maxlength="60">
     </div>
     <div class="form-group">
+      <label>Link to Previous Season (optional)</label>
+      <select id="league-link-select" onchange="applyLeagueLink()">
+        <option value="">— Select a previous league to match —</option>
+      </select>
+      <div class="small" style="margin-top:4px;color:var(--text2);">Picks up that league's Series name automatically, even if this year's league is named differently.</div>
+    </div>
+    <div class="form-group">
       <label>Series (optional)</label>
       <input type="text" id="league-series-input" placeholder="e.g. Tuesday Winter League" maxlength="60">
-      <div class="small" style="margin-top:4px;color:var(--text2);">Use the same series name every year (e.g. just "Tuesday Winter League") so seasons can be compared year to year. Leave blank to use the league name.</div>
+      <div class="small" style="margin-top:4px;color:var(--text2);">Use the same series name every year so seasons can be compared, even if the league names differ. Leave blank to use the league name.</div>
     </div>
     <div class="form-group">
       <label>Handicap Base Score</label>
@@ -3088,6 +3095,29 @@ async function shareSeasonComparison() {
 // ============================================================
 // LEAGUE MANAGEMENT
 // ============================================================
+// Lets a league (which may be named differently each year) link its Series
+// name to a past league picked from a list, instead of relying on the
+// admin retyping the exact same text every season.
+function populateLeagueLinkOptions(excludeId) {
+  const sel = document.getElementById('league-link-select');
+  const opts = leagues
+    .filter(lg => lg.id !== excludeId)
+    .slice()
+    .sort((a, b) => new Date(b.start_date || b.created_at) - new Date(a.start_date || a.created_at));
+  sel.innerHTML = '<option value="">— Select a previous league to match —</option>' +
+    opts.map(lg => `<option value="${lg.id}">${esc(lg.name)}${lg.end_date ? ' (ended ' + formatDate(lg.end_date) + ')' : ''}</option>`).join('');
+  sel.value = '';
+}
+
+function applyLeagueLink() {
+  const id = document.getElementById('league-link-select').value;
+  if (!id) return;
+  const lg = leagues.find(l => l.id === id);
+  if (!lg) return;
+  document.getElementById('league-series-input').value = leagueMatchKey(lg);
+  showToast(`Linked to "${lg.name}" — Series name copied`, 'success');
+}
+
 function openNewLeagueModal() {
   document.getElementById('modal-league-title').textContent = 'New League';
   document.getElementById('modal-league-id').value = '';
@@ -3098,6 +3128,7 @@ function openNewLeagueModal() {
   document.getElementById('league-start-input').value = '';
   document.getElementById('league-weeks-input').value = '';
   document.getElementById('league-end-input').value = '';
+  populateLeagueLinkOptions(null);
   openModal('modal-league');
 }
 
@@ -3113,6 +3144,7 @@ function openEditLeagueModal(id) {
   document.getElementById('league-start-input').value = lg.start_date || '';
   document.getElementById('league-weeks-input').value = lg.num_weeks || '';
   document.getElementById('league-end-input').value = lg.end_date || '';
+  populateLeagueLinkOptions(id);
   openModal('modal-league');
 }
 
