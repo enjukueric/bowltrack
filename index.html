@@ -298,6 +298,18 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
   text-align: right;
 }
 .league-card .lc-avg-lbl { font-size: .65rem; color: var(--text2); text-align: right; }
+.league-card.ended { opacity: .6; }
+.lc-ended-badge {
+  display: inline-block;
+  font-size: .6rem;
+  font-weight: 600;
+  color: var(--neon2);
+  border: 1px solid var(--neon2);
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
 
 .fab {
   position: fixed;
@@ -1714,8 +1726,11 @@ select option { background: var(--bg2); }
           <h2 id="sessions-title">Sessions</h2>
           <div class="subtitle" id="sessions-subtitle"></div>
         </div>
-        <div style="display:flex;gap:8px;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <span id="sessions-ended-badge" style="display:none;color:var(--neon2);font-size:.75rem;font-weight:600;"></span>
           <button class="btn-secondary" id="sessions-note-btn" style="padding:8px 12px;font-size:.8rem;display:none;" onclick="openLeagueNoteModal()">📝 Note</button>
+          <button class="btn-secondary" id="sessions-compare-btn" style="padding:8px 12px;font-size:.8rem;display:none;" onclick="openCompareSeasonsModal()">📊 Compare</button>
+          <button class="btn-secondary" id="sessions-end-league-btn" style="padding:8px 12px;font-size:.8rem;display:none;" onclick="openEndLeagueModal()">🏁 End League</button>
           <button class="btn-secondary" style="padding:8px 12px;font-size:.8rem;" onclick="showScreen('home')">Back</button>
         </div>
       </div>
@@ -1866,7 +1881,12 @@ select option { background: var(--bg2); }
     <input type="hidden" id="modal-league-id">
     <div class="form-group">
       <label>League Name</label>
-      <input type="text" id="league-name-input" placeholder="Thursday Night League" maxlength="60">
+      <input type="text" id="league-name-input" placeholder="Tuesday Winter League 2026" maxlength="60">
+    </div>
+    <div class="form-group">
+      <label>Series (optional)</label>
+      <input type="text" id="league-series-input" placeholder="e.g. Tuesday Winter League" maxlength="60">
+      <div class="small" style="margin-top:4px;color:var(--text2);">Use the same series name every year (e.g. just "Tuesday Winter League") so seasons can be compared year to year. Leave blank to use the league name.</div>
     </div>
     <div class="form-group">
       <label>Handicap Base Score</label>
@@ -1875,6 +1895,19 @@ select option { background: var(--bg2); }
     <div class="form-group">
       <label>Handicap Percentage (%)</label>
       <input type="number" id="league-pct-input" value="90" min="1" max="100">
+    </div>
+    <div class="form-group">
+      <label>Start Date (optional)</label>
+      <input type="date" id="league-start-input" onchange="recalcLeagueEndDate()">
+    </div>
+    <div class="form-group">
+      <label># of Weeks (optional)</label>
+      <input type="number" id="league-weeks-input" min="1" max="60" placeholder="e.g. 30" oninput="recalcLeagueEndDate()">
+    </div>
+    <div class="form-group">
+      <label>End Date (optional)</label>
+      <input type="date" id="league-end-input">
+      <div class="small" style="margin-top:4px;color:var(--text2);">Set start date + weeks to auto-fill this, or enter it directly. Once this date passes, the league auto-ends and final stats are saved.</div>
     </div>
     <div class="modal-btns">
       <button class="btn-secondary" onclick="closeModal('modal-league')">Cancel</button>
@@ -1978,6 +2011,37 @@ select option { background: var(--bg2); }
     <p id="league-reminder-text" style="white-space:pre-wrap;line-height:1.5;"></p>
     <div class="modal-btns">
       <button class="btn-primary" onclick="dismissLeagueReminder()">Got it</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: End League / Final Stats -->
+<div class="modal-overlay" id="modal-league-end">
+  <div class="modal" style="max-width:480px;">
+    <h3 id="league-end-title">End League?</h3>
+    <div class="small" id="league-end-intro" style="margin-bottom:10px;color:var(--text2);"></div>
+    <div id="league-end-body"><div class="spinner"></div></div>
+    <div class="modal-btns" style="flex-wrap:wrap;gap:8px;">
+      <button class="btn-secondary" onclick="exportLeagueStatsCSV()">⬇️ Export CSV</button>
+      <button class="btn-secondary" onclick="shareLeagueStats()">📤 Share</button>
+      <button class="btn-secondary" onclick="emailLeagueStats()">✉️ Email</button>
+      <button class="btn-secondary" id="league-end-reopen-btn" style="display:none;" onclick="reopenLeague()">🔓 Reopen League</button>
+      <button class="btn-secondary" onclick="closeModal('modal-league-end')">Close</button>
+      <button class="btn-primary" id="league-end-save-btn" onclick="confirmEndLeague()">🏁 Save &amp; End League</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Compare Seasons -->
+<div class="modal-overlay" id="modal-league-compare">
+  <div class="modal" style="max-width:560px;">
+    <h3 id="league-compare-title">Compare Seasons</h3>
+    <div id="league-compare-body"><div class="spinner"></div></div>
+    <div class="modal-btns" style="flex-wrap:wrap;gap:8px;">
+      <button class="btn-secondary" onclick="exportSeasonComparisonCSV()">⬇️ Export CSV</button>
+      <button class="btn-secondary" onclick="shareSeasonComparison()">📤 Share</button>
+      <button class="btn-secondary" onclick="emailSeasonComparison()">✉️ Email</button>
+      <button class="btn-secondary" onclick="closeModal('modal-league-compare')">Close</button>
     </div>
   </div>
 </div>
@@ -2505,6 +2569,7 @@ async function loadHomeData() {
   const { data, error } = await sb.from('leagues').select('*').order('created_at');
   if (error) { showToast('Error loading leagues', 'error'); return; }
   leagues = data || [];
+  await checkAndAutoEndLeagues();
 
   // Restore any in-progress session after a phone lock / reload
   if (restoreActiveSessionFromStorage()) {
@@ -2554,10 +2619,11 @@ async function renderLeagueList() {
   list.innerHTML = leagues.map(lg => {
     const avg = avgs[lg.id];
     const handi = calcHandicap(lg, avg);
+    const ended = !!lg.ended_at;
     return `
-    <div class="league-card" onclick="openLeagueSessions('${lg.id}')">
+    <div class="league-card${ended ? ' ended' : ''}" onclick="openLeagueSessions('${lg.id}')">
       <div class="lc-info">
-        <div class="lc-name">${esc(lg.name)}</div>
+        <div class="lc-name">${esc(lg.name)}${ended ? ' <span class="lc-ended-badge">🏁 Ended</span>' : ''}</div>
         <div class="lc-meta">Hdcp base ${lg.handicap_base} @ ${lg.handicap_pct}% &nbsp;·&nbsp; Hdcp: <span style="color:var(--neon2)">${handi}</span></div>
       </div>
       <div>
@@ -2602,14 +2668,436 @@ function calcHandicap(league, avg) {
 }
 
 // ============================================================
+// END LEAGUE / SEASON STATS
+// ============================================================
+// Each `leagues` row is one season (e.g. "Tuesday Winter League 2026"), so
+// a season's final stats are simply that league's lifetime stats — no
+// date-range filtering needed. The computed snapshot is saved permanently
+// to leagues.final_stats so the recap survives even if raw session/game
+// rows are later pruned.
+async function computeLeagueFinalStats(leagueId) {
+  const league = leagues.find(l => l.id === leagueId);
+  if (!league) return null;
+
+  const { data: gamesData } = await sb.from('games')
+    .select('id, total_score, game_number, sessions!inner(id, league_id, date)')
+    .eq('sessions.league_id', leagueId)
+    .not('total_score', 'is', null)
+    .order('sessions(date)', { ascending: true });
+
+  const games = gamesData || [];
+  const scores = games.map(g => g.total_score);
+
+  if (!scores.length) {
+    return {
+      league_name: league.name, computed_at: new Date().toISOString(),
+      games_count: 0, sessions_count: 0, average: 0, high: 0, low: 0,
+      series_high: 0, handicap: 0, handicap_avg: 0, spare_pct: 0,
+      pin_leaves: [], by_year: {}, date_range: null
+    };
+  }
+
+  const avg  = Math.round(scores.reduce((a,b)=>a+b,0) / scores.length);
+  const high = Math.max(...scores);
+  const low  = Math.min(...scores);
+  const handi = calcHandicap(league, avg);
+
+  // Series totals (sum of games per session)
+  const bySession = {};
+  for (const g of games) {
+    const sid = g.sessions.id;
+    if (!bySession[sid]) bySession[sid] = { date: g.sessions.date, total: 0, count: 0 };
+    bySession[sid].total += g.total_score;
+    bySession[sid].count++;
+  }
+  const seriesTotals = Object.values(bySession).map(s => s.total);
+  const seriesHigh = seriesTotals.length ? Math.max(...seriesTotals) : 0;
+
+  // Frames for pin leave + spare conversion stats
+  const gameIds = games.map(g => g.id);
+  let frames = [];
+  if (gameIds.length) {
+    const { data: framesData } = await sb.from('frames').select('*').in('game_id', gameIds);
+    frames = framesData || [];
+  }
+
+  const pinLeaveCounts = {};
+  let spTotal = 0, spMade = 0;
+  for (const fr of frames) {
+    if (fr.frame_number > 10) continue;
+    if (fr.roll1 === 10) continue; // strike, no leave
+    const knocked = new Set(fr.roll1_pins || []);
+    const remaining = [1,2,3,4,5,6,7,8,9,10].filter(p => !knocked.has(p));
+    if (!remaining.length) continue;
+    const key = remaining.sort((a,b)=>a-b).join('-');
+    pinLeaveCounts[key] = (pinLeaveCounts[key] || 0) + 1;
+    if (fr.frame_number <= 9) {
+      spTotal++;
+      if ((fr.roll1 ?? 0) + (fr.roll2 ?? 0) === 10) spMade++;
+    }
+  }
+  const topLeaves = Object.entries(pinLeaveCounts)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0, 10)
+    .map(([pins, count]) => ({ pins, count }));
+
+  // Year-over-year (a season can straddle a New Year, e.g. a winter league)
+  const byYear = {};
+  for (const g of games) {
+    const yr = new Date(g.sessions.date).getFullYear();
+    if (!byYear[yr]) byYear[yr] = [];
+    byYear[yr].push(g.total_score);
+  }
+  const yearStats = {};
+  for (const yr of Object.keys(byYear)) {
+    const s = byYear[yr];
+    yearStats[yr] = { games: s.length, average: Math.round(s.reduce((a,b)=>a+b,0)/s.length), high: Math.max(...s) };
+  }
+
+  return {
+    league_name: league.name,
+    computed_at: new Date().toISOString(),
+    games_count: scores.length,
+    sessions_count: Object.keys(bySession).length,
+    average: avg,
+    high, low,
+    series_high: seriesHigh,
+    handicap: handi,
+    handicap_avg: avg + handi,
+    spare_pct: spTotal ? Math.round(spMade / spTotal * 100) : 0,
+    pin_leaves: topLeaves,
+    by_year: yearStats,
+    date_range: { first: games[0].sessions.date, last: games[games.length-1].sessions.date }
+  };
+}
+
+// Finds leagues past their end_date that haven't been ended yet, snapshots
+// their final stats, and locks them — no need to remember to hit a button.
+async function checkAndAutoEndLeagues() {
+  if (!currentUser) return;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const due = leagues.filter(lg => lg.end_date && lg.end_date < todayStr && !lg.ended_at);
+  for (const lg of due) {
+    const stats = await computeLeagueFinalStats(lg.id);
+    const { error } = await sb.from('leagues')
+      .update({ ended_at: new Date().toISOString(), final_stats: stats })
+      .eq('id', lg.id);
+    if (!error) {
+      lg.ended_at = new Date().toISOString();
+      lg.final_stats = stats;
+    }
+  }
+  if (due.length) showToast(`${due.length} league${due.length>1?'s':''} auto-ended — final stats saved`, 'success');
+}
+
+let leagueEndStatsCache = null;
+
+async function openEndLeagueModal() {
+  if (!currentLeague) return;
+  openModal('modal-league-end');
+  const body = document.getElementById('league-end-body');
+  body.innerHTML = '<div class="spinner"></div>';
+
+  const alreadyEnded = !!currentLeague.ended_at;
+  const stats = (alreadyEnded && currentLeague.final_stats)
+    ? currentLeague.final_stats
+    : await computeLeagueFinalStats(currentLeague.id);
+  leagueEndStatsCache = stats;
+
+  document.getElementById('league-end-title').textContent = alreadyEnded
+    ? `🏁 ${currentLeague.name} — Final Stats`
+    : `End ${currentLeague.name}?`;
+  document.getElementById('league-end-intro').textContent = alreadyEnded
+    ? (currentLeague.end_date ? `Season ended ${formatDate(currentLeague.end_date)}.` : 'Season ended.')
+    : 'This locks the season and saves a permanent stats snapshot. Export, share, or email it below first if you want a copy.';
+
+  body.innerHTML = renderLeagueEndStatsHTML(stats);
+  document.getElementById('league-end-save-btn').style.display = alreadyEnded ? 'none' : 'inline-block';
+  document.getElementById('league-end-reopen-btn').style.display = alreadyEnded ? 'inline-block' : 'none';
+}
+
+function renderLeagueEndStatsHTML(stats) {
+  if (!stats || !stats.games_count) {
+    return '<div class="empty-state"><div class="es-text">No games recorded for this league yet.</div></div>';
+  }
+  const years = Object.keys(stats.by_year).sort((a,b) => b-a);
+  return `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="val">${stats.average}</div><div class="lbl">Average</div></div>
+      <div class="stat-card"><div class="val">${stats.high}</div><div class="lbl">High Game</div></div>
+      <div class="stat-card"><div class="val">${stats.low}</div><div class="lbl">Low Game</div></div>
+      <div class="stat-card"><div class="val">${stats.games_count}</div><div class="lbl">Games</div></div>
+      <div class="stat-card"><div class="val" style="color:var(--neon2)">${stats.handicap}</div><div class="lbl">Handicap</div></div>
+      <div class="stat-card"><div class="val" style="color:var(--neon2)">${stats.handicap_avg}</div><div class="lbl">H-Avg</div></div>
+      <div class="stat-card"><div class="val">${stats.series_high}</div><div class="lbl">High Series</div></div>
+      <div class="stat-card"><div class="val">${stats.spare_pct}%</div><div class="lbl">Spare Rate</div></div>
+    </div>
+    ${stats.pin_leaves.length ? `
+    <div class="stats-section">
+      <h3>Top Pin Leaves</h3>
+      <div class="pin-leave-chart">
+        ${stats.pin_leaves.slice(0,5).map(pl => `
+          <div class="plc-row">
+            <div class="plc-label">Pin${pl.pins.includes('-')?'s':''} ${pl.pins}</div>
+            <div class="plc-bar-wrap"><div class="plc-bar" style="width:${Math.round(pl.count/stats.pin_leaves[0].count*100)}%"></div></div>
+            <div class="plc-count">${pl.count}</div>
+          </div>`).join('')}
+      </div>
+    </div>` : ''}
+    ${years.length ? `
+    <div class="stats-section">
+      <h3>By Year</h3>
+      <table class="year-table">
+        <thead><tr><th>Year</th><th>Games</th><th>Average</th><th>High</th></tr></thead>
+        <tbody>
+          ${years.map(yr => `<tr><td>${yr}</td><td>${stats.by_year[yr].games}</td><td class="yr-avg">${stats.by_year[yr].average}</td><td>${stats.by_year[yr].high}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+  `;
+}
+
+async function confirmEndLeague() {
+  if (!currentLeague || !leagueEndStatsCache) return;
+  if (!confirm(`End "${currentLeague.name}"? This locks the season and saves the stats above permanently. You can still export/share/email or view them anytime after.`)) return;
+  const endedAt = new Date().toISOString();
+  const { error } = await sb.from('leagues')
+    .update({ ended_at: endedAt, final_stats: leagueEndStatsCache })
+    .eq('id', currentLeague.id);
+  if (error) { showToast('Error ending league', 'error'); return; }
+  currentLeague.ended_at = endedAt;
+  currentLeague.final_stats = leagueEndStatsCache;
+  const lg = leagues.find(l => l.id === currentLeague.id);
+  if (lg) { lg.ended_at = endedAt; lg.final_stats = leagueEndStatsCache; }
+  closeModal('modal-league-end');
+  showToast('League ended — final stats saved!', 'success');
+  applyLeagueEndedUI();
+  await renderLeagueList();
+}
+
+async function reopenLeague() {
+  if (!currentLeague) return;
+  if (!confirm(`Reopen "${currentLeague.name}"? This clears the end date too, so set a new one if you want it to auto-end again.`)) return;
+  const { error } = await sb.from('leagues')
+    .update({ ended_at: null, end_date: null, num_weeks: null })
+    .eq('id', currentLeague.id);
+  if (error) { showToast('Error reopening league', 'error'); return; }
+  currentLeague.ended_at = null;
+  currentLeague.end_date = null;
+  currentLeague.num_weeks = null;
+  const lg = leagues.find(l => l.id === currentLeague.id);
+  if (lg) { lg.ended_at = null; lg.end_date = null; lg.num_weeks = null; }
+  closeModal('modal-league-end');
+  showToast('League reopened', 'success');
+  applyLeagueEndedUI();
+  await renderLeagueList();
+}
+
+function applyLeagueEndedUI() {
+  const ended = !!(currentLeague && currentLeague.ended_at);
+  const fab = document.getElementById('new-session-fab');
+  fab.style.display = ended ? 'none' : 'flex';
+  document.getElementById('sessions-note-btn').style.display = (currentLeague && !ended) ? 'inline-block' : 'none';
+  const endBtn = document.getElementById('sessions-end-league-btn');
+  if (endBtn) endBtn.textContent = ended ? '🏁 Final Stats' : '🏁 End League';
+  const compareBtn = document.getElementById('sessions-compare-btn');
+  if (compareBtn) compareBtn.style.display = currentLeague ? 'inline-block' : 'none';
+  const badge = document.getElementById('sessions-ended-badge');
+  if (badge) {
+    badge.style.display = ended ? 'inline-block' : 'none';
+    badge.textContent = currentLeague?.end_date ? `🏁 Ended ${formatDate(currentLeague.end_date)}` : '🏁 Ended';
+  }
+}
+
+// ============================================================
+// COMPARE SEASONS (leagues sharing the same series across years)
+// ============================================================
+let seasonCompareRows = null;
+let seasonCompareKey = '';
+
+function leagueMatchKey(lg) {
+  return (lg.series_key && lg.series_key.trim()) || lg.name;
+}
+
+async function findMatchingLeagues(leagueId) {
+  const base = leagues.find(l => l.id === leagueId);
+  if (!base) return [];
+  const key = leagueMatchKey(base);
+  const { data } = await sb.from('leagues').select('*').eq('user_id', currentUser.id);
+  const matches = (data || []).filter(lg => leagueMatchKey(lg) === key);
+  matches.sort((a, b) => new Date(a.start_date || a.created_at) - new Date(b.start_date || b.created_at));
+  return matches;
+}
+
+async function openCompareSeasonsModal() {
+  if (!currentLeague) return;
+  openModal('modal-league-compare');
+  const body = document.getElementById('league-compare-body');
+  body.innerHTML = '<div class="spinner"></div>';
+
+  const matches = await findMatchingLeagues(currentLeague.id);
+  seasonCompareKey = leagueMatchKey(currentLeague);
+  document.getElementById('league-compare-title').textContent = `Compare: ${seasonCompareKey}`;
+
+  if (matches.length < 2) {
+    body.innerHTML = `<div class="empty-state"><div class="es-text">No other seasons found yet.<br>Set the same "Series" name on another league (e.g. next year's "${esc(seasonCompareKey)}") to compare it here.</div></div>`;
+    seasonCompareRows = null;
+    return;
+  }
+
+  const rows = [];
+  for (const lg of matches) {
+    const stats = (lg.ended_at && lg.final_stats) ? lg.final_stats : await computeLeagueFinalStats(lg.id);
+    rows.push({ league: lg, stats });
+  }
+  seasonCompareRows = rows;
+  body.innerHTML = renderCompareTableHTML(rows);
+}
+
+function renderCompareTableHTML(rows) {
+  return `
+  <div class="stats-section" style="overflow-x:auto;">
+    <table class="year-table">
+      <thead><tr><th>Season</th><th>Games</th><th>Avg</th><th>High</th><th>Hdcp</th><th>Spare%</th></tr></thead>
+      <tbody>
+        ${rows.map(r => `<tr>
+          <td>${esc(r.league.name)}${!r.league.ended_at ? ' <span class="lc-ended-badge" style="color:var(--text2);border-color:var(--text2);">active</span>' : ''}</td>
+          <td>${r.stats.games_count}</td>
+          <td class="yr-avg">${r.stats.average}</td>
+          <td>${r.stats.high}</td>
+          <td>${r.stats.handicap}</td>
+          <td>${r.stats.spare_pct}%</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+function exportSeasonComparisonCSV() {
+  if (!seasonCompareRows) { showToast('Nothing to export yet', 'error'); return; }
+  const rows = [['Season Comparison', seasonCompareKey], []];
+  rows.push(['Season', 'Games', 'Average', 'High', 'Low', 'High Series', 'Handicap', 'H-Avg', 'Spare %']);
+  seasonCompareRows.forEach(r => {
+    const s = r.stats;
+    rows.push([r.league.name, s.games_count, s.average, s.high, s.low, s.series_high, s.handicap, s.handicap_avg, s.spare_pct]);
+  });
+  downloadCsv(rows, `${slugifyFilename(seasonCompareKey)}_season_comparison.csv`);
+}
+
+function emailSeasonComparison() {
+  if (!seasonCompareRows) { showToast('Nothing to email yet', 'error'); return; }
+  const lines = [`Season comparison: ${seasonCompareKey}`, ''];
+  seasonCompareRows.forEach(r => {
+    const s = r.stats;
+    lines.push(`${r.league.name}: ${s.games_count} games, avg ${s.average}, high ${s.high}, hdcp ${s.handicap}, spare ${s.spare_pct}%`);
+  });
+  lines.push('', '— Sent from Bowl Track');
+  const subject = encodeURIComponent(`${seasonCompareKey} — Season Comparison`);
+  const bodyText = encodeURIComponent(lines.join('\n'));
+  window.location.href = `mailto:?subject=${subject}&body=${bodyText}`;
+}
+
+async function shareSeasonComparison() {
+  if (!seasonCompareRows || !seasonCompareRows.length) { showToast('Nothing to share yet', 'error'); return; }
+  const rows = seasonCompareRows;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = Math.max(720, 300 + rows.length * 80);
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const grad = ctx.createLinearGradient(0, 0, 1080, 0);
+  grad.addColorStop(0, '#b44fff');
+  grad.addColorStop(1, '#00e5ff');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, 8);
+
+  ctx.fillStyle = '#00e5ff';
+  ctx.font = 'bold 34px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('🎳 BOWL TRACK', 60, 80);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  let title = seasonCompareKey;
+  while (ctx.measureText(title).width > 960 && title.length > 1) title = title.slice(0, -1);
+  if (title !== seasonCompareKey) title += '…';
+  ctx.fillText(title, 540, 150);
+
+  ctx.fillStyle = '#9090a8';
+  ctx.font = '26px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText('SEASON COMPARISON', 540, 190);
+
+  const headerY = 250;
+  ctx.font = 'bold 22px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillStyle = '#9090a8';
+  ctx.textAlign = 'left';  ctx.fillText('SEASON', 60, headerY);
+  ctx.textAlign = 'center'; ctx.fillText('AVG', 485, headerY);
+  ctx.fillText('HIGH', 625, headerY);
+  ctx.fillText('HDCP', 765, headerY);
+  ctx.fillText('SPARE%', 930, headerY);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+  ctx.beginPath(); ctx.moveTo(60, headerY + 20); ctx.lineTo(1020, headerY + 20); ctx.stroke();
+
+  rows.forEach((r, i) => {
+    const rowY = headerY + 80 + i * 80;
+    const s = r.stats;
+    if (i % 2 === 0) {
+      ctx.fillStyle = 'rgba(255,255,255,0.03)';
+      ctx.fillRect(60, rowY - 40, 960, 70);
+    }
+    ctx.font = 'bold 30px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    let name = r.league.name;
+    while (ctx.measureText(name).width > 320 && name.length > 1) name = name.slice(0, -1);
+    if (name !== r.league.name) name += '…';
+    ctx.fillText(name, 60, rowY);
+
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#00e5ff';
+    ctx.fillText(String(s.average), 485, rowY);
+    ctx.fillStyle = s.high >= 200 ? '#ffd700' : '#ffffff';
+    ctx.fillText(String(s.high), 625, rowY);
+    ctx.fillStyle = '#b44fff';
+    ctx.fillText(String(s.handicap), 765, rowY);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(s.spare_pct + '%', 930, rowY);
+  });
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, canvas.height - 8, canvas.width, 8);
+
+  const filename = `${slugifyFilename(seasonCompareKey)}_season_comparison.png`;
+  canvas.toBlob(async blob => {
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `${seasonCompareKey} Season Comparison`, text: `My season-over-season stats on Bowl Track!` });
+      } catch(e) { if (e.name !== 'AbortError') downloadCanvas(canvas, filename); }
+    } else {
+      downloadCanvas(canvas, filename);
+    }
+  }, 'image/png');
+}
+
+// ============================================================
 // LEAGUE MANAGEMENT
 // ============================================================
 function openNewLeagueModal() {
   document.getElementById('modal-league-title').textContent = 'New League';
   document.getElementById('modal-league-id').value = '';
   document.getElementById('league-name-input').value = '';
+  document.getElementById('league-series-input').value = '';
   document.getElementById('league-base-input').value = '220';
   document.getElementById('league-pct-input').value = '90';
+  document.getElementById('league-start-input').value = '';
+  document.getElementById('league-weeks-input').value = '';
+  document.getElementById('league-end-input').value = '';
   openModal('modal-league');
 }
 
@@ -2619,23 +3107,49 @@ function openEditLeagueModal(id) {
   document.getElementById('modal-league-title').textContent = 'Edit League';
   document.getElementById('modal-league-id').value = id;
   document.getElementById('league-name-input').value = lg.name;
+  document.getElementById('league-series-input').value = lg.series_key || '';
   document.getElementById('league-base-input').value = lg.handicap_base;
   document.getElementById('league-pct-input').value = lg.handicap_pct;
+  document.getElementById('league-start-input').value = lg.start_date || '';
+  document.getElementById('league-weeks-input').value = lg.num_weeks || '';
+  document.getElementById('league-end-input').value = lg.end_date || '';
   openModal('modal-league');
 }
 
+// Auto-fill End Date from Start Date + # of Weeks (last week's session date).
+// Leagues vary in length (16, 30, etc. weeks) so this is just a convenience —
+// End Date can still be typed/edited directly.
+function recalcLeagueEndDate() {
+  const startVal = document.getElementById('league-start-input').value;
+  const weeksVal = parseInt(document.getElementById('league-weeks-input').value);
+  if (!startVal || !weeksVal || weeksVal < 1) return;
+  const start = new Date(startVal + 'T12:00:00');
+  const end = new Date(start);
+  end.setDate(end.getDate() + (weeksVal - 1) * 7);
+  document.getElementById('league-end-input').value = end.toISOString().slice(0, 10);
+}
+
 async function saveLeague() {
-  const id   = document.getElementById('modal-league-id').value;
-  const name = document.getElementById('league-name-input').value.trim();
-  const base = parseInt(document.getElementById('league-base-input').value) || 220;
-  const pct  = parseInt(document.getElementById('league-pct-input').value)  || 90;
+  const id      = document.getElementById('modal-league-id').value;
+  const name    = document.getElementById('league-name-input').value.trim();
+  const series  = document.getElementById('league-series-input').value.trim() || null;
+  const base    = parseInt(document.getElementById('league-base-input').value) || 220;
+  const pct     = parseInt(document.getElementById('league-pct-input').value)  || 90;
+  const start   = document.getElementById('league-start-input').value || null;
+  const weeks   = parseInt(document.getElementById('league-weeks-input').value) || null;
+  const end     = document.getElementById('league-end-input').value || null;
   if (!name) { showToast('Please enter a league name', 'error'); return; }
 
+  const payload = {
+    name, handicap_base: base, handicap_pct: pct,
+    series_key: series, start_date: start, num_weeks: weeks, end_date: end
+  };
+
   if (id) {
-    const { error } = await sb.from('leagues').update({ name, handicap_base: base, handicap_pct: pct }).eq('id', id);
+    const { error } = await sb.from('leagues').update(payload).eq('id', id);
     if (error) { showToast('Error saving league', 'error'); return; }
   } else {
-    const { error } = await sb.from('leagues').insert({ user_id: currentUser.id, name, handicap_base: base, handicap_pct: pct });
+    const { error } = await sb.from('leagues').insert({ user_id: currentUser.id, ...payload });
     if (error) { showToast('Error creating league', 'error'); return; }
   }
   closeModal('modal-league');
@@ -2663,7 +3177,8 @@ async function openLeagueSessions(leagueId) {
   document.getElementById('sessions-title').textContent = currentLeague.name;
   document.getElementById('sessions-subtitle').textContent = `Hdcp base ${currentLeague.handicap_base} @ ${currentLeague.handicap_pct}%`;
   document.getElementById('new-session-fab').onclick = startNewSession;
-  document.getElementById('sessions-note-btn').style.display = 'inline-block';
+  document.getElementById('sessions-end-league-btn').style.display = 'inline-block';
+  applyLeagueEndedUI();
   await loadSessions(leagueId);
 }
 
@@ -2673,7 +3188,11 @@ async function openPracticeSessions() {
   document.getElementById('sessions-title').textContent = 'Practice';
   document.getElementById('sessions-subtitle').textContent = 'Open bowling & solo practice';
   document.getElementById('new-session-fab').onclick = startNewSession;
+  document.getElementById('new-session-fab').style.display = 'flex';
   document.getElementById('sessions-note-btn').style.display = 'none';
+  document.getElementById('sessions-end-league-btn').style.display = 'none';
+  document.getElementById('sessions-compare-btn').style.display = 'none';
+  document.getElementById('sessions-ended-badge').style.display = 'none';
   await loadSessions(null);
 }
 
@@ -4122,8 +4641,8 @@ async function loadSettingsScreen() {
     <div class="settings-league-card">
       <div class="slc-header">
         <div>
-          <div class="slc-name">${esc(lg.name)}</div>
-          <div class="slc-meta">Base ${lg.handicap_base} · ${lg.handicap_pct}% handicap</div>
+          <div class="slc-name">${esc(lg.name)}${lg.ended_at ? ' <span class="lc-ended-badge">🏁 Ended</span>' : ''}</div>
+          <div class="slc-meta">Base ${lg.handicap_base} · ${lg.handicap_pct}% handicap${lg.end_date ? ` · ends ${formatDate(lg.end_date)}` : ''}</div>
         </div>
       </div>
       <div class="slc-actions">
@@ -4577,11 +5096,192 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function downloadCanvas(canvas) {
+function downloadCanvas(canvas, filename) {
   const a = document.createElement('a');
-  a.download = 'bowltrack-score.png';
+  a.download = filename || 'bowltrack-score.png';
   a.href = canvas.toDataURL('image/png');
   a.click();
+}
+
+// ============================================================
+// LEAGUE FINAL STATS: EXPORT / SHARE / EMAIL
+// ============================================================
+
+function slugifyFilename(name) {
+  return String(name).replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'league';
+}
+
+function statsToCsvRows(label, s) {
+  const years = Object.keys(s.by_year || {}).sort();
+  return [
+    ['League', label],
+    ['Computed At', s.computed_at],
+    ['Games', s.games_count],
+    ['Average', s.average],
+    ['High Game', s.high],
+    ['Low Game', s.low],
+    ['High Series', s.series_high],
+    ['Handicap', s.handicap],
+    ['Handicap Average', s.handicap_avg],
+    ['Spare Rate %', s.spare_pct],
+    [],
+    ['Year', 'Games', 'Average', 'High'],
+    ...years.map(yr => [yr, s.by_year[yr].games, s.by_year[yr].average, s.by_year[yr].high]),
+    [],
+    ['Pin Leave', 'Count'],
+    ...(s.pin_leaves || []).map(pl => [pl.pins, pl.count]),
+  ];
+}
+
+function downloadCsv(rows, filename) {
+  const csv = rows.map(r => r.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportLeagueStatsCSV() {
+  if (!leagueEndStatsCache || !currentLeague) return;
+  downloadCsv(statsToCsvRows(currentLeague.name, leagueEndStatsCache), `${slugifyFilename(currentLeague.name)}_final_stats.csv`);
+}
+
+function statsToEmailLines(label, s) {
+  const lines = [
+    `Final stats for ${label}`,
+    '',
+    `Games: ${s.games_count}`,
+    `Average: ${s.average}`,
+    `High Game: ${s.high}`,
+    `Low Game: ${s.low}`,
+    `High Series: ${s.series_high}`,
+    `Handicap: ${s.handicap}`,
+    `Handicap Average: ${s.handicap_avg}`,
+    `Spare Rate: ${s.spare_pct}%`,
+  ];
+  if (s.pin_leaves && s.pin_leaves.length) {
+    lines.push('', 'Top Pin Leaves:');
+    s.pin_leaves.slice(0,5).forEach(pl => lines.push(`  Pin(s) ${pl.pins}: ${pl.count}`));
+  }
+  const years = Object.keys(s.by_year || {}).sort((a,b) => b-a);
+  if (years.length) {
+    lines.push('', 'By Year:');
+    years.forEach(yr => lines.push(`  ${yr}: ${s.by_year[yr].games} games, avg ${s.by_year[yr].average}, high ${s.by_year[yr].high}`));
+  }
+  return lines;
+}
+
+function emailLeagueStats() {
+  if (!leagueEndStatsCache || !currentLeague) return;
+  const lines = statsToEmailLines(currentLeague.name, leagueEndStatsCache);
+  lines.push('', '— Sent from Bowl Track');
+  const subject = encodeURIComponent(`${currentLeague.name} — Final League Stats`);
+  const bodyText = encodeURIComponent(lines.join('\n'));
+  window.location.href = `mailto:?subject=${subject}&body=${bodyText}`;
+}
+
+async function shareLeagueStats() {
+  if (!leagueEndStatsCache || !currentLeague) return;
+  const s = leagueEndStatsCache;
+  if (!s.games_count) { showToast('No stats to share yet', 'error'); return; }
+  const name = myProfile?.full_name || currentUser?.email?.split('@')[0] || 'Bowler';
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1080;
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#0a0a0f';
+  ctx.fillRect(0, 0, 1080, 1080);
+  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < 1080; x += 60) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,1080); ctx.stroke(); }
+  for (let y = 0; y < 1080; y += 60) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(1080,y); ctx.stroke(); }
+
+  const grad = ctx.createLinearGradient(0, 0, 1080, 0);
+  grad.addColorStop(0, '#b44fff');
+  grad.addColorStop(1, '#00e5ff');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1080, 8);
+
+  ctx.fillStyle = '#00e5ff';
+  ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('🎳 BOWL', 80, 90);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(' TRACK', 80 + ctx.measureText('🎳 BOWL').width, 90);
+
+  ctx.strokeStyle = 'rgba(0,229,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(80, 110); ctx.lineTo(1000, 110); ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 56px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.textAlign = 'center';
+  let leagueName = currentLeague.name;
+  while (ctx.measureText(leagueName).width > 900 && leagueName.length > 1) leagueName = leagueName.slice(0, -1);
+  if (leagueName !== currentLeague.name) leagueName += '…';
+  ctx.fillText(leagueName, 540, 200);
+
+  ctx.fillStyle = '#9090a8';
+  ctx.font = '30px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText(`FINAL STATS  ·  ${name}`, 540, 245);
+
+  drawStatBox(ctx, 270, 320, 'AVERAGE', s.average, '#00e5ff');
+  drawStatBox(ctx, 810, 320, 'HIGH GAME', s.high, s.high >= 200 ? '#ffd700' : '#ffffff');
+  drawStatBox(ctx, 270, 480, 'HANDICAP', s.handicap, '#b44fff');
+  drawStatBox(ctx, 810, 480, 'H-AVERAGE', s.handicap_avg, '#b44fff');
+  drawStatBox(ctx, 270, 640, 'GAMES', s.games_count, '#ffffff');
+  drawStatBox(ctx, 810, 640, 'SPARE %', s.spare_pct + '%', '#ffffff');
+
+  const milestones = [];
+  if (s.high === 300) milestones.push('PERFECT GAME! 🎳');
+  else if (s.high >= 200) milestones.push('200+ CLUB 🔥');
+  if (s.average >= 200) milestones.push('200+ AVERAGE 💯');
+
+  if (milestones.length) {
+    const bannerY = 800;
+    const bannerGrad = ctx.createLinearGradient(140, 0, 940, 0);
+    bannerGrad.addColorStop(0, 'rgba(180,79,255,0.2)');
+    bannerGrad.addColorStop(1, 'rgba(0,229,255,0.2)');
+    ctx.fillStyle = bannerGrad;
+    roundRect(ctx, 140, bannerY, 800, 70, 12);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,229,255,0.4)';
+    ctx.lineWidth = 1;
+    roundRect(ctx, 140, bannerY, 800, 70, 12);
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 30px -apple-system, BlinkMacSystemFont, sans-serif';
+    ctx.fillText(milestones[0], 540, bannerY + 44);
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+  roundRect(ctx, 140, 900, 800, 110, 16);
+  ctx.fill();
+  ctx.fillStyle = '#00e5ff';
+  ctx.font = 'bold 26px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText('Track your game at', 540, 945);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 34px -apple-system, BlinkMacSystemFont, sans-serif';
+  ctx.fillText('enjukueric.github.io/bowltrack', 540, 988);
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 1072, 1080, 8);
+
+  const filename = `${slugifyFilename(currentLeague.name)}_final_stats.png`;
+  canvas.toBlob(async blob => {
+    const file = new File([blob], filename, { type: 'image/png' });
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `${currentLeague.name} Final Stats`, text: `My final stats for ${currentLeague.name} on Bowl Track!` });
+      } catch(e) { if (e.name !== 'AbortError') downloadCanvas(canvas, filename); }
+    } else {
+      downloadCanvas(canvas, filename);
+    }
+  }, 'image/png');
 }
 
 // ============================================================
