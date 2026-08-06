@@ -1672,16 +1672,10 @@ select option { background: var(--bg2); }
         </div>
       </div>
 
-      <div class="section-title" style="margin-top:8px;">Sky Lanes</div>
-      <div class="league-list" style="padding-bottom:0;">
-        <div class="league-card" onclick="openLaneTalkImport()" style="cursor:pointer;">
-          <div class="lc-info">
-            <div class="lc-name">Import Recent Games</div>
-            <div class="lc-meta">Pull completed scores from Sky Lanes</div>
-          </div>
-          <div class="lc-avg" style="color:var(--neon);font-size:1.1rem;">↓</div>
-        </div>
-      </div>
+      <!-- Sky Lanes / LaneTalk import parked: their API is just a live whole-center
+           board (no personal/date scoping), and a personal Pro account has no
+           export or API either. Re-enable this card (and openLaneTalkImport) if
+           that ever changes, e.g. via a GDPR-export-based importer. -->
 
       <button class="fab" onclick="openNewLeagueModal()" title="New League">+</button>
     </div>
