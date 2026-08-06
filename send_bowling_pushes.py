@@ -7,6 +7,13 @@ Setup:
   Set SUPABASE_SERVICE_KEY below (Supabase dashboard → Settings → API → service_role)
   Set VAPID_CLAIMS email below
   Copy vapid_private.pem to the same directory
+  Run bowling_push_state_migration.sql once in the Supabase SQL editor
+
+State ("last checked") is tracked in the push_notif_state table in Supabase,
+not a local file — GitHub Actions runners are ephemeral and don't persist
+anything between runs, and GitHub's schedule cadence is unreliable (often
+1-2 hours apart despite a 10-minute cron), so a fixed local-file lookback
+window would silently miss most activity.
 
 Schedule on Quatch: every 10 minutes
   python send_bowling_pushes.py
@@ -28,10 +35,13 @@ SUPABASE_URL      = 'https://mzjicrhoyftmzeqqjzbj.supabase.co'
 SUPABASE_SVC_KEY  = os.environ.get('BOWL_SVC_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16amljcmhveWZ0bXplcXFqemJqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDA5MDYyMiwiZXhwIjoyMDg5NjY2NjIyfQ.GqF7ofTwuhPqGf3fTMsDAwMJeoTDXGdehQ-IxDBagkc')
 VAPID_PRIVATE_KEY = os.environ.get('VAPID_KEY_FILE', 'vapid_private.pem')
 VAPID_CLAIMS      = {'sub': 'mailto:eric@enjukuracing.com'}
-STATE_FILE        = 'bowling_push_state.json'
+STATE_TABLE       = 'push_notif_state'
+STATE_ID          = 1
 APP_URL           = 'https://enjukueric.github.io/bowltrack/'
-# When LOOKBACK_MINUTES is set, ignore state file and check that window instead
-LOOKBACK_MINUTES  = int(os.environ.get('LOOKBACK_MINUTES', '0'))
+# Manual override for one-off/testing runs (e.g. workflow_dispatch input): if
+# set, checks that fixed window instead of the persisted state, and does NOT
+# advance the persisted cursor. Leave unset for normal scheduled runs.
+LOOKBACK_MINUTES  = int(os.environ.get('LOOKBACK_MINUTES') or '0')
 # ───────────────────────────────────────────────────────────────────────────────
 
 HEADERS = {
@@ -44,14 +54,26 @@ def supa_get(table, params):
     return r.json() if r.ok else []
 
 def load_state():
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE) as f:
-            return json.load(f)
-    return {'last_checked': '1970-01-01T00:00:00+00:00'}
+    rows = supa_get(STATE_TABLE, {'id': f'eq.{STATE_ID}', 'select': 'last_checked'})
+    if rows:
+        return {'last_checked': rows[0]['last_checked']}
+    # No row yet (migration not run, or first ever run) — seed from now so
+    # we don't blast a backlog of old activity as notifications.
+    now = datetime.now(timezone.utc).isoformat()
+    state = {'last_checked': now}
+    save_state(state)
+    return state
 
 def save_state(state):
-    with open(STATE_FILE, 'w') as f:
-        json.dump(state, f)
+    r = requests.post(
+        f'{SUPABASE_URL}/rest/v1/{STATE_TABLE}',
+        params={'on_conflict': 'id'},
+        headers={**HEADERS, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates'},
+        json={'id': STATE_ID, 'last_checked': state['last_checked']},
+        timeout=10
+    )
+    if not r.ok:
+        print(f"  WARN Failed to save state: {r.status_code} {r.text}")
 
 def get_session_owner(session_id):
     rows = supa_get('sessions', {'id': f'eq.{session_id}', 'select': 'user_id'})

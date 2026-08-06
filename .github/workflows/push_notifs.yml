@@ -2,8 +2,13 @@ name: Bowl Track Push Notifications
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # every 10 minutes
+    - cron: '*/10 * * * *'  # every 10 minutes (GitHub may delay this on low-traffic repos)
   workflow_dispatch:         # allow manual runs
+    inputs:
+      lookback_minutes:
+        description: 'Override: check a fixed window (minutes) instead of persisted state. Leave blank for normal behavior.'
+        required: false
+        default: ''
 
 jobs:
   send-pushes:
@@ -27,4 +32,4 @@ jobs:
         run: python send_bowling_pushes.py
         env:
           BOWL_SVC_KEY: ${{ secrets.BOWL_SVC_KEY }}
-          LOOKBACK_MINUTES: '12'
+          LOOKBACK_MINUTES: ${{ github.event.inputs.lookback_minutes }}
