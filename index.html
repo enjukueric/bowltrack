@@ -264,6 +264,22 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
 }
 .stat-card .lbl { font-size: .7rem; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
 
+.home-ask { font-size: 1.25rem; font-weight: 800; margin: 14px 16px 10px; }
+.mode-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 14px; }
+.mode-tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  padding: 14px; min-height: 108px; text-align: left; color: var(--text);
+  border-radius: 16px; border: 1px solid var(--tc, var(--border));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--tc) 18%, var(--bg3)) 0%, var(--bg3) 70%);
+  cursor: pointer; font-family: inherit;
+}
+.mode-tile:active { transform: scale(.97); }
+.mode-tile.mt-practice   { --tc: var(--success); }
+.mode-tile.mt-league     { --tc: var(--neon); }
+.mode-tile.mt-tournament { --tc: var(--strike); grid-column: 1 / -1; min-height: 84px; }
+.mode-tile .mt-icon { font-size: 1.6rem; line-height: 1; }
+.mode-tile .mt-name { font-weight: 700; font-size: 1.05rem; margin-top: auto; }
+.mode-tile .mt-sub { font-size: .72rem; color: var(--text2); }
 .section-title {
   font-size: .75rem;
   text-transform: uppercase;
@@ -1650,7 +1666,7 @@ select option { background: var(--bg2); }
     <div id="screen-home" class="screen">
       <div class="page-header">
         <div>
-          <h2>My Leagues</h2>
+          <h2>Bowling</h2>
           <div class="subtitle" id="home-subtitle">Loading...</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -1678,22 +1694,29 @@ select option { background: var(--bg2); }
       </div>
 
       <div id="lucky-lane"></div>
-      <div class="section-title">Leagues</div>
-      <div class="league-list" id="league-list">
-        <div class="spinner"></div>
+      <div class="home-ask">What are you bowling today?</div>
+      <div class="mode-tiles">
+        <button class="mode-tile mt-practice" onclick="openPracticeSessions()">
+          <span class="mt-icon">🎯</span>
+          <span class="mt-name">Practice</span>
+          <span class="mt-sub"><span id="practice-avg">—</span> avg · open bowling</span>
+        </button>
+        <button class="mode-tile mt-league" onclick="onLeagueTile()">
+          <span class="mt-icon">🏆</span>
+          <span class="mt-name">League</span>
+          <span class="mt-sub" id="league-tile-sub">—</span>
+        </button>
+        <button class="mode-tile mt-tournament" onclick="openTournamentSessions()">
+          <span class="mt-icon">🥇</span>
+          <span class="mt-name">Tournament</span>
+          <span class="mt-sub"><span id="tournament-avg">—</span> avg · saved w/ oil</span>
+        </button>
       </div>
 
-      <div class="section-title" style="margin-top:8px;">Practice</div>
-      <div class="league-list" style="padding-bottom:0;">
-        <div class="league-card" onclick="openPracticeSessions()" style="cursor:pointer;">
-          <div class="lc-info">
-            <div class="lc-name">Practice Sessions</div>
-            <div class="lc-meta">Open bowling &amp; solo practice</div>
-          </div>
-          <div>
-            <div class="lc-avg" id="practice-avg">—</div>
-            <div class="lc-avg-lbl">average</div>
-          </div>
+      <div id="league-panel" style="display:none;">
+        <div class="section-title">Your Leagues</div>
+        <div class="league-list" id="league-list">
+          <div class="spinner"></div>
         </div>
       </div>
 
@@ -1956,7 +1979,7 @@ select option { background: var(--bg2); }
 <!-- MODAL: New Session -->
 <div class="modal-overlay" id="modal-session">
   <div class="modal">
-    <h3>Start New Session</h3>
+    <h3 id="session-modal-title">Start New Session</h3>
     <div class="form-group">
       <label>Date</label>
       <input type="date" id="session-date-input">
@@ -1970,7 +1993,7 @@ select option { background: var(--bg2); }
       </select>
     </div>
     <div class="form-group">
-      <label>Notes (optional)</label>
+      <label id="session-notes-label">Notes (optional)</label>
       <textarea id="session-notes-input" rows="2" placeholder="e.g. Week 12"></textarea>
     </div>
     <div class="form-group">
@@ -2641,6 +2664,10 @@ async function loadHomeStats() {
 
 async function renderLeagueList() {
   const list = document.getElementById('league-list');
+  updateTileAverages();
+  const activeCt = leagues.filter(l => !l.ended_at).length;
+  const subEl = document.getElementById('league-tile-sub');
+  if (subEl) subEl.textContent = leagues.length ? `${activeCt} active league${activeCt!==1?'s':''}` : 'Tap to add one';
   if (!leagues.length) {
     list.innerHTML = '<div class="empty-state"><div class="es-icon">🎳</div><div class="es-text">No leagues yet.<br>Tap + to create your first league.</div></div>';
     return;
@@ -2670,18 +2697,35 @@ async function renderLeagueList() {
     </div>`;
   }).join('');
 
-  // Update practice average card
+}
+
+async function updateTileAverages() {
   const practiceAvg = await getPracticeAverage();
   practiceAvgCached = practiceAvg;
   const practiceEl = document.getElementById('practice-avg');
   if (practiceEl) practiceEl.textContent = practiceAvg !== null ? Math.round(practiceAvg) : '—';
+  const tAvg = await getPracticeAverage('tournament');
+  const tEl = document.getElementById('tournament-avg');
+  if (tEl) tEl.textContent = tAvg !== null ? Math.round(tAvg) : '—';
 }
 
-async function getPracticeAverage() {
+// League tile: one active league -> jump straight in; otherwise show the list
+function onLeagueTile() {
+  const active = leagues.filter(l => !l.ended_at);
+  if (leagues.length === 1 || active.length === 1) {
+    openLeagueSessions((active.length === 1 ? active[0] : leagues[0]).id);
+    return;
+  }
+  const panel = document.getElementById('league-panel');
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+  if (panel.style.display !== 'none') panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function getPracticeAverage(type = 'practice') {
   const { data } = await sb
     .from('games')
     .select('total_score, sessions!inner(session_type, user_id)')
-    .eq('sessions.session_type', 'practice')
+    .eq('sessions.session_type', type)
     .eq('sessions.user_id', currentUser.id)
     .not('total_score', 'is', null);
   const scores = (data||[]).map(g=>g.total_score).filter(s=>s!=null);
@@ -3233,6 +3277,7 @@ async function deleteLeague(id) {
 // SESSIONS SCREEN
 // ============================================================
 async function openLeagueSessions(leagueId) {
+  sessionsMode = 'league';
   currentLeague = leagues.find(l=>l.id===leagueId);
   if (!currentLeague) return;
   showScreen('sessions');
@@ -3244,8 +3289,26 @@ async function openLeagueSessions(leagueId) {
   await loadSessions(leagueId);
 }
 
+let sessionsMode = 'practice'; // 'practice' | 'tournament' (league uses currentLeague)
+
+async function openTournamentSessions() {
+  currentLeague = null;
+  sessionsMode = 'tournament';
+  showScreen('sessions');
+  document.getElementById('sessions-title').textContent = 'Tournaments';
+  document.getElementById('sessions-subtitle').textContent = 'Scores saved with the oil pattern';
+  document.getElementById('new-session-fab').onclick = startNewSession;
+  document.getElementById('new-session-fab').style.display = 'flex';
+  document.getElementById('sessions-note-btn').style.display = 'none';
+  document.getElementById('sessions-end-league-btn').style.display = 'none';
+  document.getElementById('sessions-compare-btn').style.display = 'none';
+  document.getElementById('sessions-ended-badge').style.display = 'none';
+  await loadSessions(null);
+}
+
 async function openPracticeSessions() {
   currentLeague = null;
+  sessionsMode = 'practice';
   showScreen('sessions');
   document.getElementById('sessions-title').textContent = 'Practice';
   document.getElementById('sessions-subtitle').textContent = 'Open bowling & solo practice';
@@ -3307,14 +3370,14 @@ async function loadSessions(leagueId) {
   if (leagueId) {
     query = query.eq('league_id', leagueId);
   } else {
-    query = query.eq('session_type', 'practice');
+    query = query.eq('session_type', sessionsMode === 'tournament' ? 'tournament' : 'practice');
   }
   const { data: sessions, error } = await query;
 
   if (error) { console.error('loadSessions error:', error); showToast('Error: ' + error.message, 'error'); return; }
 
   if (!sessions || !sessions.length) {
-    const label = leagueId ? 'league sessions' : 'practice sessions';
+    const label = leagueId ? 'league sessions' : (sessionsMode === 'tournament' ? 'tournaments' : 'practice sessions');
     container.innerHTML = `<div class="empty-state"><div class="es-icon">🎳</div><div class="es-text">No ${label} yet.<br>Tap + to start your first session.</div></div>`;
     return;
   }
@@ -3349,7 +3412,7 @@ async function loadSessions(leagueId) {
       <div class="session-header" onclick="toggleSession('${sess.id}')">
         <div>
           <div class="session-date">${dateStr}</div>
-          <div class="session-meta">${games.length} game${games.length!==1?'s':''} ${sess.notes ? '· '+esc(sess.notes) : ''}</div>
+          <div class="session-meta">${sess.session_type === 'tournament' && sess.notes ? '<b>'+esc(sess.notes)+'</b> · ' : ''}${games.length} game${games.length!==1?'s':''} ${sess.notes && sess.session_type !== 'tournament' ? '· '+esc(sess.notes) : ''}</div>
           ${laneChips ? `<div class="lane-chips">${laneChips}</div>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -3371,6 +3434,8 @@ async function loadSessions(leagueId) {
   }).join('');
 }
 
+function sessionTypeLabel(t) { return t === 'practice' ? 'Practice' : t === 'tournament' ? 'Tournament' : 'League'; }
+
 function toggleSession(id) {
   document.getElementById('sess-' + id)?.classList.toggle('expanded');
 }
@@ -3388,10 +3453,14 @@ function startNewSession() {
   });
   document.querySelectorAll('#lane-cond-section .pill-opt').forEach(b => b.classList.remove('active'));
   // Collapse the section
+  const isTourney = !currentLeague && sessionsMode === 'tournament';
   const sec = document.getElementById('lane-cond-section');
-  if (sec) sec.style.display = 'none';
+  if (sec) sec.style.display = isTourney ? '' : 'none';   // oil pattern up front for tournaments
   const arr = document.getElementById('lc-toggle-arrow');
-  if (arr) arr.textContent = '▼';
+  if (arr) arr.textContent = isTourney ? '▲' : '▼';
+  document.getElementById('session-modal-title').textContent = isTourney ? 'New Tournament' : 'Start New Session';
+  document.getElementById('session-notes-label').textContent = isTourney ? 'Tournament Name' : 'Notes (optional)';
+  document.getElementById('session-notes-input').placeholder = isTourney ? 'e.g. Spring Open, Sport Shot Classic' : 'e.g. Week 12';
   openModal('modal-session');
 }
 
@@ -3411,9 +3480,11 @@ async function createSession() {
   };
 
   // Create session (league or practice)
+  const newType = currentLeague ? 'league' : (sessionsMode === 'tournament' ? 'tournament' : 'practice');
+  if (newType === 'tournament' && !notes) { showToast('Enter a tournament name', 'error'); return; }
   const insertData = currentLeague
     ? { league_id: currentLeague.id, user_id: currentUser.id, date, notes, session_type: 'league', ...lcPayload }
-    : { user_id: currentUser.id, date, notes, session_type: 'practice', ...lcPayload };
+    : { user_id: currentUser.id, date, notes, session_type: newType, ...lcPayload };
   const { data: sessData, error: sessErr } = await sb.from('sessions')
     .insert(insertData)
     .select().single();
@@ -3434,7 +3505,7 @@ async function createSession() {
   currentSession = {
     id:           sessData.id,
     league_id:    currentLeague ? currentLeague.id : null,
-    session_type: currentLeague ? 'league' : 'practice',
+    session_type: newType,
     date:         sessData.date,
     games:        gamesData.sort((a,b) => a.game_number - b.game_number)
   };
@@ -3486,7 +3557,7 @@ function renderGameScreen() {
   if (!currentSession) { showNoActiveGame(); return; }
 
   const league = leagues.find(l=>l.id===currentSession.league_id);
-  document.getElementById('game-screen-title').textContent = league ? esc(league.name) : (currentSession.session_type === 'practice' ? 'Practice' : 'Active Session');
+  document.getElementById('game-screen-title').textContent = league ? esc(league.name) : (currentSession.session_type === 'practice' ? 'Practice' : currentSession.session_type === 'tournament' ? 'Tournament' : 'Active Session');
   document.getElementById('game-screen-subtitle').textContent = formatDate(currentSession.date);
   // Show/update lane conditions button
   const laneBtn = document.getElementById('lanes-edit-btn');
@@ -4948,7 +5019,7 @@ async function loadProfileScreen(userId) {
   const sessHtml = (sessions || []).map(s => {
     const games = (s.games || []).filter(g => g.total_score != null).sort((a,b) => a.game_number - b.game_number);
     if (!games.length) return '';
-    const label = s.session_type === 'practice' ? 'Practice' : 'League';
+    const label = sessionTypeLabel(s.session_type);
     return `<div class="profile-session-card">
       <div class="profile-session-meta">${label} · ${getTimeAgo(s.date)}</div>
       <div class="profile-session-scores">
@@ -5035,7 +5106,7 @@ async function shareScoreCard(sessionId) {
 
   const avg = Math.round(games.reduce((s,g) => s + g.total_score, 0) / games.length);
   const high = Math.max(...games.map(g => g.total_score));
-  const leagueName = sess.leagues?.name || (sess.session_type === 'practice' ? 'Practice Session' : 'League Session');
+  const leagueName = sess.leagues?.name || (sess.session_type === 'practice' ? 'Practice Session' : sess.session_type === 'tournament' ? 'Tournament' : 'League Session');
   const dateStr = new Date(sess.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
   const canvas = document.createElement('canvas');
@@ -5550,7 +5621,7 @@ async function loadNotifs() {
   el.innerHTML = allActivity.map(a => {
     const name = pm[a.user_id] || 'Someone';
     const session = sessionMap[a.target_id];
-    const sessionLabel = session ? `${session.session_type === 'practice' ? 'Practice' : 'League'} · ${getTimeAgo(session.date)}` : '';
+    const sessionLabel = session ? `${sessionTypeLabel(session.session_type)} · ${getTimeAgo(session.date)}` : '';
     const body = a.kind === 'reaction'
       ? `reacted ${a.emoji} to your session`
       : `commented: <em>${escHtml(a.content)}</em>`;
@@ -5640,7 +5711,7 @@ function renderFeedCard(session, profile, reactions, commentCount) {
     ? Math.round(games.reduce((s,g) => s + g.total_score, 0) / games.length)
     : null;
   const name = profile?.full_name || 'Unknown';
-  const label = session.session_type === 'practice' ? 'Practice' : 'League';
+  const label = sessionTypeLabel(session.session_type);
   const myEmoji = myReactions[`session:${session.id}`];
 
   const scoreHtml = games.map(g => `
