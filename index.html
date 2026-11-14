@@ -264,6 +264,34 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
 }
 .stat-card .lbl { font-size: .7rem; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
 
+.bt-open-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  padding: 14px; margin-bottom: 12px; border-radius: 14px; color: var(--text);
+  border: 1px solid var(--neon3); font-family: inherit; cursor: pointer;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--neon3) 20%, var(--bg3)) 0%, var(--bg3) 75%);
+}
+.bt-open-card .bt-oc-icon { font-size: 1.5rem; }
+.bt-open-card .bt-oc-title { font-weight: 700; }
+.bt-open-card .bt-oc-sub { font-size: .74rem; color: var(--text2); margin-top: 2px; }
+.bt-open-card .bt-oc-arrow { margin-left: auto; color: var(--neon3); font-size: 1.2rem; }
+.bt-wrap { padding: 12px 16px 24px; }
+.bt-filter-lbl { font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; color: var(--neon); font-weight: 700; margin: 4px 0 6px; }
+.bt-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-top: 12px; }
+.bt-card h4 { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--neon); margin: 0 0 4px; }
+.bt-card .bt-help { font-size: .8rem; color: var(--text2); margin-bottom: 12px; line-height: 1.4; }
+.bt-row { margin: 14px 0; }
+.bt-row-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.bt-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.bt-name { font-weight: 700; font-size: .95rem; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bt-pct { font-weight: 800; font-size: .95rem; }
+.bt-pct small { font-weight: 500; color: var(--text2); font-size: .7rem; }
+.bt-track { position: relative; height: 16px; border-radius: 8px; background: var(--bg2); border: 1px solid var(--border); overflow: hidden; }
+.bt-used { position: absolute; top: 0; bottom: 0; opacity: .28; }
+.bt-best { position: absolute; top: 0; bottom: 0; border-radius: 8px;
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.28) 0 4px, transparent 4px 8px); }
+.bt-axis { display: flex; justify-content: space-between; font-size: .62rem; color: var(--text2); margin-top: 3px; padding: 0 1px; }
+.bt-detail { font-size: .74rem; color: var(--text2); margin-top: 3px; }
+.bt-note { font-size: .74rem; color: var(--text2); margin-top: 12px; text-align: center; }
 .home-ask { font-size: 1.25rem; font-weight: 800; margin: 14px 16px 10px; }
 .mode-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 14px; }
 .mode-tile {
@@ -1756,8 +1784,33 @@ select option { background: var(--bg2); }
         <h2>Statistics</h2>
       </div>
       <div class="stats-container">
+        <button class="bt-open-card" onclick="openBallTracker()">
+          <span class="bt-oc-icon">🎯</span>
+          <span><div class="bt-oc-title">Ball Tracker</div><div class="bt-oc-sub">Which ball is hot, and for how many frames</div></span>
+          <span class="bt-oc-arrow">›</span>
+        </button>
         <div class="stats-league-picker" id="stats-league-picker"></div>
         <div id="stats-content"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- BALL TRACKER SCREEN -->
+    <div id="screen-balltracker" class="screen">
+      <div class="page-header">
+        <div>
+          <h2>Ball Tracker</h2>
+          <div class="subtitle">Strikes by frame, per ball</div>
+        </div>
+        <button class="btn-secondary" style="padding:8px 12px;font-size:.8rem;" onclick="showScreen('stats')">‹ Stats</button>
+      </div>
+      <div class="bt-wrap">
+        <div class="bt-filter-lbl">Oil pattern</div>
+        <div class="stats-league-picker" id="bt-oil-picker"></div>
+        <div id="bt-center-wrap" style="display:none;">
+          <div class="bt-filter-lbl" style="margin-top:10px;">Center</div>
+          <div class="stats-league-picker" id="bt-center-picker"></div>
+        </div>
+        <div id="bt-content"><div class="spinner"></div></div>
       </div>
     </div>
 
@@ -2001,6 +2054,11 @@ select option { background: var(--bg2); }
         <span>🛤️ Lane Conditions</span><span id="lc-toggle-arrow">▼</span>
       </button>
       <div class="lane-cond-section" id="lane-cond-section" style="display:none;">
+        <div>
+          <label>Bowling Center</label>
+          <input type="text" id="lc-center-input" list="lc-center-list" placeholder="e.g. Sky Lanes" maxlength="60" autocomplete="off">
+          <datalist id="lc-center-list"></datalist>
+        </div>
         <div>
           <label>Lane Number(s)</label>
           <input type="text" id="lc-lanes-input" placeholder="e.g. 14-15 or 7" maxlength="20">
@@ -3434,6 +3492,153 @@ async function loadSessions(leagueId) {
   }).join('');
 }
 
+// ============================================================
+// BALL TRACKER  (strike rate by frame position, per ball)
+// ============================================================
+let btOil = 'all';
+let btCenter = 'all';
+let btData = null; // cached rows: [{ballId, frame, strike, pattern}]
+const BT_OILS = [['all','All'],['house','House'],['sport','Sport'],['challenge','Challenge'],['flooding','Flooding'],['unknown','Unknown']];
+const BT_WINDOW = 6;      // frames in the "sweet spot"
+const BT_MIN_ATT = 6;     // min attempts in a window before we trust it
+
+async function openBallTracker() {
+  showScreen('balltracker');
+  btData = null;
+  renderBtOilPicker();
+  document.getElementById('bt-content').innerHTML = '<div class="spinner"></div>';
+  try {
+    await loadBalls();
+    btData = await loadBallTrackerData();
+    renderBtCenterPicker();
+  } catch (e) {
+    console.error('ball tracker load', e);
+    document.getElementById('bt-content').innerHTML = '<div class="empty-state"><div class="es-text">Could not load ball data.</div></div>';
+    return;
+  }
+  renderBallTracker();
+}
+
+function renderBtOilPicker() {
+  document.getElementById('bt-oil-picker').innerHTML = BT_OILS.map(([v, l]) =>
+    `<button class="league-pill ${btOil===v?'active':''}" onclick="setBtOil('${v}')">${l}</button>`).join('');
+}
+function setBtOil(v) { btOil = v; renderBtOilPicker(); renderBallTracker(); }
+function setBtCenter(v) { btCenter = v; renderBtCenterPicker(); renderBallTracker(); }
+function renderBtCenterPicker() {
+  const centers = [...new Set((btData || []).map(r => r.center).filter(Boolean))].sort();
+  const wrap = document.getElementById('bt-center-wrap');
+  wrap.style.display = centers.length ? '' : 'none';
+  if (btCenter !== 'all' && !centers.includes(btCenter)) btCenter = 'all';
+  document.getElementById('bt-center-picker').innerHTML =
+    [['all', 'All centers'], ...centers.map(c => [c, c])].map(([v, l]) =>
+      `<button class="league-pill ${btCenter===v?'active':''}" data-c="${esc(v)}" onclick="setBtCenter(this.dataset.c)">${esc(l)}</button>`).join('');
+}
+
+function btChunks(arr, n) { const out = []; for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n)); return out; }
+
+async function loadBallTrackerData() {
+  const ballIds = (myBalls || []).map(b => b.id);
+  if (!ballIds.length) return [];
+  // 1) games where one of MY balls was logged (also keeps friends' sessions out)
+  const { data: first, error: e1 } = await sb.from('game_ball_log').select('game_id').in('ball_id', ballIds);
+  if (e1) throw e1;
+  const gameIds = [...new Set((first || []).map(r => r.game_id))];
+  if (!gameIds.length) return [];
+  // 2) every ball-log row, frame, and pattern for those games
+  const logs = [], frames = [], pat = {};
+  for (const ch of btChunks(gameIds, 60)) {
+    const [l, f, g] = await Promise.all([
+      sb.from('game_ball_log').select('game_id, ball_id, from_frame').in('game_id', ch),
+      sb.from('frames').select('game_id, frame_number, roll1').in('game_id', ch),
+      sb.from('games').select('id, sessions(pattern, center)').in('id', ch)
+    ]);
+    if (l.error) throw l.error; if (f.error) throw f.error;
+    let gd = g.data;
+    if (g.error) { // 'center' column not created yet -> fall back to pattern only
+      const g2 = await sb.from('games').select('id, sessions(pattern)').in('id', ch);
+      if (g2.error) throw g2.error;
+      gd = g2.data;
+    }
+    logs.push(...(l.data || [])); frames.push(...(f.data || []));
+    (gd || []).forEach(r => { pat[r.id] = { pattern: r.sessions?.pattern || 'unknown', center: r.sessions?.center || null }; });
+  }
+  const logBy = {};
+  logs.forEach(r => { (logBy[r.game_id] = logBy[r.game_id] || []).push(r); });
+  Object.values(logBy).forEach(a => a.sort((x, y) => x.from_frame - y.from_frame));
+  const rows = [];
+  for (const fr of frames) {
+    if (fr.roll1 == null || fr.frame_number < 1 || fr.frame_number > 10) continue;
+    let ball = null;
+    for (const e of (logBy[fr.game_id] || [])) { if (e.from_frame <= fr.frame_number) ball = e.ball_id; }
+    if (!ball) continue;
+    const pc = pat[fr.game_id] || { pattern: 'unknown', center: null };
+    rows.push({ ballId: ball, frame: fr.frame_number, strike: fr.roll1 === 10, pattern: pc.pattern, center: pc.center });
+  }
+  return rows;
+}
+
+function btAnalyze(rows) {
+  const per = {};
+  for (const r of rows) {
+    const o = per[r.ballId] = per[r.ballId] || { att: Array(11).fill(0), str: Array(11).fill(0), A: 0, S: 0 };
+    o.att[r.frame]++; o.A++;
+    if (r.strike) { o.str[r.frame]++; o.S++; }
+  }
+  const out = [];
+  for (const [ballId, o] of Object.entries(per)) {
+    let best = null;
+    for (let st = 1; st + BT_WINDOW - 1 <= 10; st++) {
+      let a = 0, k = 0;
+      for (let f = st; f < st + BT_WINDOW; f++) { a += o.att[f]; k += o.str[f]; }
+      if (a < BT_MIN_ATT) continue;
+      const rate = k / a;
+      if (!best || rate > best.rate + 1e-9) best = { start: st, end: st + BT_WINDOW - 1, a, k, rate };
+    }
+    let first = 0, last = 0;
+    for (let f = 1; f <= 10; f++) if (o.att[f]) { if (!first) first = f; last = f; }
+    out.push({ ballId, A: o.A, S: o.S, rate: o.S / o.A, best, first, last });
+  }
+  return out;
+}
+
+function renderBallTracker() {
+  const box = document.getElementById('bt-content');
+  if (!btData || !btData.length) {
+    box.innerHTML = `<div class="empty-state"><div class="es-icon">🎯</div><div class="es-text">No ball data yet.<br>Pick the ball you throw while scoring a game and it will show up here.</div></div>`;
+    return;
+  }
+  const rows = btData.filter(r => (btOil === 'all' || r.pattern === btOil) && (btCenter === 'all' || r.center === btCenter));
+  const res = btAnalyze(rows);
+  if (!res.length) {
+    box.innerHTML = `<div class="empty-state"><div class="es-icon">🎯</div><div class="es-text">No frames logged for that oil/center combo yet.</div></div>`;
+    return;
+  }
+  // rank: trusted windows first (by window rate), then everything else by overall rate
+  res.sort((a, b) => (b.best ? 1 : 0) - (a.best ? 1 : 0) || (b.best ? b.best.rate - a.best.rate : b.rate - a.rate));
+  const pos = f => ((f - 1) / 10 * 100);
+  const html = res.map(r => {
+    const ball = myBalls.find(b => b.id === r.ballId);
+    const col = esc(ball?.color_hex || '#6C63FF');
+    const pct = Math.round(r.rate * 100);
+    const usedL = pos(r.first), usedW = (r.last - r.first + 1) * 10;
+    const bestEl = r.best ? `<div class="bt-best" style="left:${pos(r.best.start)}%;width:${BT_WINDOW*10}%;background-color:${col}"></div>` : '';
+    const detail = r.best
+      ? `Best stretch: frames ${r.best.start}–${r.best.end} · ${r.best.k}/${r.best.a} strikes (${Math.round(r.best.rate*100)}%)`
+      : `Not enough frames yet (${r.A} logged) — needs ${BT_MIN_ATT}+ in a ${BT_WINDOW}-frame stretch`;
+    return `<div class="bt-row">
+      <div class="bt-row-head"><span class="bt-dot" style="background:${col}"></span><span class="bt-name">${esc(ball?.name || 'Unknown ball')}</span><span class="bt-pct">${pct}% <small>strikes · ${r.A} fr</small></span></div>
+      <div class="bt-track"><div class="bt-used" style="left:${usedL}%;width:${usedW}%;background:${col}"></div>${bestEl}</div>
+      <div class="bt-axis"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span></div>
+      <div class="bt-detail">${detail}</div>
+    </div>`;
+  }).join('');
+  box.innerHTML = `<div class="bt-card"><h4>Sweet spot</h4>
+    <div class="bt-help">The ${BT_WINDOW} frames in a row where each ball struck most often, across all your games. Faint bar = frames you threw it; striped = its best stretch.</div>
+    ${html}</div>
+    <div class="bt-note">Counts first-ball strikes only. Frame positions 1–10 are pooled across games, so more games means a more reliable read.</div>`;
+}
+
 function sessionTypeLabel(t) { return t === 'practice' ? 'Practice' : t === 'tournament' ? 'Tournament' : 'League'; }
 
 function toggleSession(id) {
@@ -3447,6 +3652,11 @@ function startNewSession() {
   // Reset lane condition fields
   document.getElementById('lc-lanes-input').value   = '';
   document.getElementById('lc-notes-input').value   = '';
+  try {
+    const known = JSON.parse(localStorage.getItem('bt_centers') || '[]');
+    document.getElementById('lc-center-list').innerHTML = known.map(c => `<option value="${esc(c)}">`).join('');
+    document.getElementById('lc-center-input').value = known[0] || '';
+  } catch (e) { document.getElementById('lc-center-input').value = ''; }
   ['lc-pattern-val','lc-length-val','lc-cond-val'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -3478,6 +3688,14 @@ async function createSession() {
     condition:      document.getElementById('lc-cond-val').value || null,
     lane_notes:     document.getElementById('lc-notes-input').value.trim() || null,
   };
+  const centerVal = (document.getElementById('lc-center-input').value || '').trim();
+  if (centerVal) {
+    lcPayload.center = centerVal;
+    try {
+      const known = JSON.parse(localStorage.getItem('bt_centers') || '[]').filter(c => c.toLowerCase() !== centerVal.toLowerCase());
+      localStorage.setItem('bt_centers', JSON.stringify([centerVal, ...known].slice(0, 12)));
+    } catch (e) {}
+  }
 
   // Create session (league or practice)
   const newType = currentLeague ? 'league' : (sessionsMode === 'tournament' ? 'tournament' : 'practice');
@@ -6517,6 +6735,7 @@ async function saveLaneConditions() {
 
 function buildLaneChips(sess) {
   const chips = [];
+  if (sess.center)         chips.push(`<span class="lane-chip">📍 ${esc(sess.center)}</span>`);
   if (sess.lanes)          chips.push(`<span class="lane-chip">🛤️ ${esc(sess.lanes)}</span>`);
   if (sess.pattern)        chips.push(`<span class="lane-chip pattern-${sess.pattern}">${capFirst(sess.pattern)} shot</span>`);
   if (sess.pattern_length) chips.push(`<span class="lane-chip">${capFirst(sess.pattern_length)} length</span>`);
