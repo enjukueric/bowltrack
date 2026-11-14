@@ -264,6 +264,11 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
 }
 .stat-card .lbl { font-size: .7rem; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
 
+.modal-btns .btn-danger { flex: 1; padding: 12px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.del-session-btn { width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,68,68,.45); background: transparent; color: var(--danger); font-size: .8rem; font-weight: 600; font-family: inherit; cursor: pointer; }
+.del-session-btn:active { background: rgba(255,68,68,.15); }
+.del-warn { border-left: 3px solid var(--danger); background: rgba(255,68,68,.1); border-radius: 8px; padding: 10px 12px; font-size: .85rem; line-height: 1.45; margin: 4px 0 14px; }
+.del-warn b { color: var(--danger); }
 .lm-bar { margin: 10px 16px 0; }
 .lm-hint { border-left: 3px solid var(--neon2); background: rgba(255,107,53,.1); border-radius: 8px; padding: 9px 12px; font-size: .82rem; margin-bottom: 8px; line-height: 1.35; }
 .lm-hint b { color: var(--neon2); }
@@ -2046,6 +2051,21 @@ select option { background: var(--bg2); }
   </div>
 </div>
 
+<!-- MODAL: Delete Session -->
+<div class="modal-overlay" id="modal-del-session">
+  <div class="modal">
+    <h3>⚠️ Delete this session?</h3>
+    <div style="font-weight:700;margin-bottom:6px;" id="del-session-what"></div>
+    <div class="del-warn">
+      <b>This can't be undone.</b> The session, all its games and scores, frame-by-frame data, ball log and lane moves will be permanently deleted, and your averages and stats will change.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-del-session')">Keep it</button>
+      <button class="btn-danger" id="del-session-confirm" onclick="confirmDeleteSession()">Delete permanently</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Lane Move -->
 <div class="modal-overlay" id="modal-lane-move">
   <div class="modal">
@@ -3505,6 +3525,8 @@ async function loadSessions(leagueId) {
   const avg = isPractice ? null : await getLeagueAverage(leagueId);
   const handi = isPractice ? 0 : calcHandicap(currentLeague, avg);
 
+  sessionsById = {};
+  sessions.forEach(x => { sessionsById[x.id] = x; });
   container.innerHTML = sessions.map(sess => {
     const games = (sess.games || []).sort((a,b)=>a.game_number-b.game_number);
     const scoreBadges = games.filter(g=>g.total_score!=null).map(g =>
@@ -3548,6 +3570,7 @@ async function loadSessions(leagueId) {
             Share Score Card
           </button>
         </div>` : ''}
+        <button class="del-session-btn" onclick="event.stopPropagation();askDeleteSession('${sess.id}')">🗑 Delete session</button>
       </div>
     </div>`;
   }).join('');
@@ -3916,6 +3939,49 @@ function renderBallTracker() {
     <div class="bt-help">The ${BT_WINDOW} frames in a row where each ball struck most often, across all your games. Faint bar = frames you threw it; striped = its best stretch.</div>
     ${html}</div>
     <div class="bt-note">Counts first-ball strikes only. Frame positions 1–10 are pooled across games, so more games means a more reliable read.</div>`;
+}
+
+let sessionsById = {};
+let delSessionId = null;
+
+function askDeleteSession(id) {
+  const sess = sessionsById[id];
+  if (!sess) return;
+  delSessionId = id;
+  const games = (sess.games || []).filter(g => g.total_score != null);
+  const scores = games.map(g => g.total_score).join(', ');
+  const kind = sess.session_type === 'tournament' && sess.notes ? esc(sess.notes) : sessionTypeLabel(sess.session_type);
+  document.getElementById('del-session-what').innerHTML =
+    `${kind} · ${esc(formatDate(sess.date))}<div class="small" style="font-weight:400;margin-top:2px;">${(sess.games||[]).length} game${(sess.games||[]).length!==1?'s':''}${scores ? ' · scores: ' + esc(scores) : ''}</div>`;
+  const btn = document.getElementById('del-session-confirm');
+  btn.disabled = false; btn.textContent = 'Delete permanently';
+  openModal('modal-del-session');
+}
+
+async function confirmDeleteSession() {
+  const id = delSessionId;
+  if (!id) return;
+  const btn = document.getElementById('del-session-confirm');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  const { data, error } = await sb.from('sessions').delete().eq('id', id).select('id');
+  if (error || !data || !data.length) {
+    console.error('delete session', error);
+    btn.disabled = false; btn.textContent = 'Delete permanently';
+    showToast(error ? 'Error deleting session' : 'Could not delete (not allowed)', 'error');
+    return;
+  }
+  delSessionId = null;
+  closeModal('modal-del-session');
+  // if it was the session currently being scored, clear it
+  if (currentSession && currentSession.id === id) {
+    clearActiveSessionFromStorage();
+    currentSession = null;
+    gameStates = [];
+  }
+  laneHistory = null;
+  showToast('Session deleted');
+  await loadSessions(currentLeague ? currentLeague.id : null);
+  loadHomeData();
 }
 
 function sessionTypeLabel(t) { return t === 'practice' ? 'Practice' : t === 'tournament' ? 'Tournament' : 'League'; }
