@@ -264,6 +264,22 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
 }
 .stat-card .lbl { font-size: .7rem; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
 
+.lm-bar { margin: 10px 16px 0; }
+.lm-hint { border-left: 3px solid var(--neon2); background: rgba(255,107,53,.1); border-radius: 8px; padding: 9px 12px; font-size: .82rem; margin-bottom: 8px; line-height: 1.35; }
+.lm-hint b { color: var(--neon2); }
+.lm-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lm-btn { padding: 9px 14px; border-radius: 18px; border: 1px solid var(--neon3); background: transparent; color: var(--neon3); font-weight: 700; font-size: .82rem; font-family: inherit; cursor: pointer; }
+.lm-btn:active { background: var(--neon3); color: #0a0a0f; }
+.lm-chip { padding: 6px 10px; border-radius: 14px; background: var(--bg3); border: 1px solid var(--border); font-size: .74rem; color: var(--text2); cursor: pointer; }
+.lm-chip.start { border-color: var(--neon3); color: var(--text); }
+.lm-stepper { display: flex; align-items: center; gap: 10px; }
+.lm-stepper button { width: 52px; height: 52px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 1.4rem; font-family: inherit; cursor: pointer; }
+.lm-stepper button:active { background: var(--neon); color: #001018; }
+.lm-val { flex: 1; text-align: center; font-weight: 800; font-size: 1.6rem; line-height: 1.1; }
+.lm-val small { display: block; font-weight: 500; font-size: .7rem; color: var(--text2); margin-top: 2px; }
+.lm-edge { display: flex; justify-content: space-between; font-size: .64rem; color: var(--text2); margin-top: 4px; }
+.bt-spot { padding: 10px 12px; margin: 8px 0; border-radius: 10px; background: var(--bg2); border: 1px solid var(--border); font-size: .84rem; line-height: 1.4; }
+.bt-spot b { color: var(--neon); }
 .bt-open-card {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
   padding: 14px; margin-bottom: 12px; border-radius: 14px; color: var(--text);
@@ -1811,6 +1827,7 @@ select option { background: var(--bg2); }
           <div class="stats-league-picker" id="bt-center-picker"></div>
         </div>
         <div id="bt-content"><div class="spinner"></div></div>
+        <div id="bt-lane"></div>
       </div>
     </div>
 
@@ -2025,6 +2042,50 @@ select option { background: var(--bg2); }
     <div class="modal-btns">
       <button class="btn-secondary" onclick="closeModal('modal-league')">Cancel</button>
       <button class="btn-primary" onclick="saveLeague()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Lane Move -->
+<div class="modal-overlay" id="modal-lane-move">
+  <div class="modal">
+    <h3 id="lm-title">Log a Move</h3>
+    <div class="pill-row" style="margin-bottom:12px;">
+      <button type="button" class="pill-opt" id="lm-kind-start" onclick="setLmKind('start')">📍 Starting spot</button>
+      <button type="button" class="pill-opt" id="lm-kind-move" onclick="setLmKind('move')">↔ Move</button>
+    </div>
+    <div class="form-group">
+      <label>At frame</label>
+      <div class="lm-stepper">
+        <button type="button" onclick="adjLaneMove('frame',-1)">−</button>
+        <div class="lm-val" id="lm-frame-val">5</div>
+        <button type="button" onclick="adjLaneMove('frame',1)">+</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Left foot on board</label>
+      <div class="lm-stepper">
+        <button type="button" onclick="adjLaneMove('feet',1)">←</button>
+        <div class="lm-val" id="lm-feet-val">22</div>
+        <button type="button" onclick="adjLaneMove('feet',-1)">→</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Target board</label>
+      <div class="lm-stepper">
+        <button type="button" onclick="adjLaneMove('target',1)">←</button>
+        <div class="lm-val" id="lm-target-val">15</div>
+        <button type="button" onclick="adjLaneMove('target',-1)">→</button>
+      </div>
+      <div class="lm-edge"><span>← left (higher board #)</span><span>right (lower board #) →</span></div>
+    </div>
+    <div class="form-group">
+      <label>Note (optional)</label>
+      <input type="text" id="lm-note-input" placeholder="e.g. ball hooking early, burn at 10 board" maxlength="140">
+    </div>
+    <div class="modal-btns">
+      <button class="btn-secondary" onclick="closeModal('modal-lane-move')">Cancel</button>
+      <button class="btn-primary" onclick="saveLaneMove()">Save</button>
     </div>
   </div>
 </div>
@@ -3493,6 +3554,222 @@ async function loadSessions(leagueId) {
 }
 
 // ============================================================
+// LANE MOVES  (starting spot + moves by board number, breakdown reminders)
+// Boards 1-39 run right->left for a right-hander, so a HIGHER board = further LEFT.
+// ============================================================
+let laneMovesCache = {};        // gameId -> [entries]
+let laneMovesOK = null;         // false when the lane_moves table doesn't exist yet
+let laneHistory = null;         // all my entries, with session context
+let laneHistoryLoading = false;
+let lmState = { gameId: null, gameNum: 1, frame: 1, kind: 'move', feet: 22, target: 15, prevFeet: null, prevTarget: null };
+
+const lmDelta = (b, p) => (b == null || p == null) ? null : b - p;      // + = moved left
+const lmDir = d => d > 0 ? `${d} left` : `${-d} right`;
+function lmArrowHint(b) {
+  const k = Math.min(7, Math.max(1, Math.round(b / 5))), d = b - 5 * k;
+  return d === 0 ? `on arrow ${k}` : `${Math.abs(d)} ${d > 0 ? 'left' : 'right'} of arrow ${k}`;
+}
+function lmChipText(m) {
+  const fd = m.kind === 'move' ? lmDelta(m.feet_board, m.prev_feet_board) : null;
+  const td = m.kind === 'move' ? lmDelta(m.target_board, m.prev_target_board) : null;
+  const parts = [];
+  if (m.feet_board != null)   parts.push(`feet ${m.feet_board}${fd ? ` (${lmDir(fd)})` : ''}`);
+  if (m.target_board != null) parts.push(`target ${m.target_board}${td ? ` (${lmDir(td)})` : ''}`);
+  return (m.kind === 'start' ? 'Start' : 'F' + m.frame_number) + ' · ' + (parts.join(', ') || 'note');
+}
+function lmSpotText(sp) {
+  const parts = [];
+  if (sp.feetD)   parts.push(`feet ${lmDir(sp.feetD)} (to about board ${sp.feetTo})`);
+  if (sp.targetD) parts.push(`target ${lmDir(sp.targetD)} (to about board ${sp.targetTo})`);
+  return parts.join(', ') || 'a move';
+}
+
+async function loadLaneMoves(gameId) {
+  const { data, error } = await sb.from('lane_moves').select('*').eq('game_id', gameId)
+    .order('frame_number').order('created_at');
+  if (error) { console.warn('lane_moves load', error.message); laneMovesOK = false; laneMovesCache[gameId] = []; return; }
+  laneMovesOK = true;
+  laneMovesCache[gameId] = data || [];
+}
+
+async function loadLaneHistory() {
+  laneHistoryLoading = true;
+  try {
+    const { data, error } = await sb.from('lane_moves')
+      .select('frame_number, kind, feet_board, target_board, prev_feet_board, prev_target_board, games!inner(game_number, sessions!inner(id, user_id, league_id, pattern, center))')
+      .eq('games.sessions.user_id', currentUser.id);
+    if (error) { console.warn('lane history', error.message); laneHistory = []; if (/lane_moves/.test(error.message || '')) laneMovesOK = false; return; }
+    laneHistory = (data || []).map(r => ({
+      sessionId: r.games.sessions.id, gameNum: r.games.game_number, frame: r.frame_number, kind: r.kind,
+      feet: r.feet_board, target: r.target_board,
+      fd: r.kind === 'move' ? lmDelta(r.feet_board, r.prev_feet_board) : null,
+      td: r.kind === 'move' ? lmDelta(r.target_board, r.prev_target_board) : null,
+      leagueId: r.games.sessions.league_id, pattern: r.games.sessions.pattern, center: r.games.sessions.center
+    }));
+  } finally { laneHistoryLoading = false; }
+}
+
+// Spots (game + 2-frame bucket) where you move in a good share of past sessions
+function laneHotspots(rows) {
+  const moves = rows.filter(r => r.kind === 'move');
+  const N = new Set(moves.map(r => r.sessionId)).size;
+  if (N < 3) return { N, spots: [] };
+  const by = {};
+  for (const r of moves) {
+    const b = Math.ceil(r.frame / 2), k = r.gameNum + '-' + b;
+    const o = by[k] = by[k] || { gameNum: r.gameNum, b, sess: new Set(), fdS: 0, fdN: 0, tdS: 0, tdN: 0, fS: 0, fN: 0, tS: 0, tN: 0 };
+    o.sess.add(r.sessionId);
+    if (r.fd != null) { o.fdS += r.fd; o.fdN++; }
+    if (r.td != null) { o.tdS += r.td; o.tdN++; }
+    if (r.feet != null) { o.fS += r.feet; o.fN++; }
+    if (r.target != null) { o.tS += r.target; o.tN++; }
+  }
+  const spots = Object.values(by)
+    .filter(o => o.sess.size >= 2 && o.sess.size / N >= 0.4)
+    .map(o => ({
+      gameNum: o.gameNum, from: (o.b - 1) * 2 + 1, to: o.b * 2, count: o.sess.size, N,
+      feetD: o.fdN ? Math.round(o.fdS / o.fdN) : null, targetD: o.tdN ? Math.round(o.tdS / o.tdN) : null,
+      feetTo: o.fN ? Math.round(o.fS / o.fN) : null, targetTo: o.tN ? Math.round(o.tS / o.tN) : null
+    }))
+    .sort((a, b) => a.gameNum - b.gameNum || a.from - b.from);
+  return { N, spots };
+}
+
+function laneScopeRows() {
+  if (!laneHistory) return [];
+  const cs = currentSession;
+  if (cs?.league_id) return laneHistory.filter(r => r.leagueId === cs.league_id);
+  return laneHistory.filter(r => !r.leagueId && (!cs?.pattern || r.pattern === cs.pattern));
+}
+
+function laneHint(gs, done) {
+  if (done || !laneHistory) return '';
+  const { spots } = laneHotspots(laneScopeRows());
+  const mine = laneMovesCache[gs.gameId] || [];
+  const spot = spots.find(sp => sp.gameNum === gs.gameNum && currentFrame >= sp.from - 1 && currentFrame <= sp.to
+    && !mine.some(m => m.kind === 'move' && m.frame_number >= sp.from && m.frame_number <= sp.to));
+  if (!spot) return '';
+  return `<div class="lm-hint">⏱️ <b>Heads up</b> — in ${spot.count} of ${spot.N} past sessions you moved around game ${spot.gameNum}, frames ${spot.from}–${spot.to}: usually ${esc(lmSpotText(spot))}. The oil is likely breaking down about now.</div>`;
+}
+
+function renderLaneMoveBar(gs, done) {
+  if (laneMovesOK === false) return '';
+  if (laneMovesCache[gs.gameId] === undefined) {
+    loadLaneMoves(gs.gameId).then(() => { if (gameStates[activeGameIndex] === gs) renderActiveGame(); });
+    return '';
+  }
+  if (laneHistory === null && !laneHistoryLoading) {
+    loadLaneHistory().then(() => { if (gameStates[activeGameIndex] === gs) renderActiveGame(); });
+  }
+  const anyLogged = gameStates.some(g => (laneMovesCache[g.gameId] || []).length);
+  const chips = laneMovesCache[gs.gameId].map(m =>
+    `<span class="lm-chip ${m.kind === 'start' ? 'start' : ''}" onclick="deleteLaneMove('${m.id}','${gs.gameId}')" title="Tap to remove">${esc(lmChipText(m))} ✕</span>`).join('');
+  const label = anyLogged ? '↔ Log a move' : '📍 Set starting spot';
+  return `<div class="lm-bar">${laneHint(gs, done)}<div class="lm-row"><button class="lm-btn" onclick="openLaneMove('${gs.gameId}')">${label}</button>${chips}</div></div>`;
+}
+
+// most recent entry at/before (gameNum, frame) in this session
+function lmPriorEntry(gameNum, frame) {
+  let best = null;
+  for (const g of gameStates) {
+    for (const m of (laneMovesCache[g.gameId] || [])) {
+      if (m.feet_board == null && m.target_board == null) continue;
+      if (g.gameNum < gameNum || (g.gameNum === gameNum && m.frame_number <= frame)) {
+        if (!best || g.gameNum > best.g || (g.gameNum === best.g && m.frame_number >= best.f)) best = { g: g.gameNum, f: m.frame_number, m };
+      }
+    }
+  }
+  return best ? best.m : null;
+}
+
+function renderLmModal() {
+  document.getElementById('lm-frame-val').textContent = lmState.frame;
+  const isMove = lmState.kind === 'move';
+  document.getElementById('lm-title').textContent = isMove ? 'Log a Move' : 'Starting Spot';
+  document.getElementById('lm-kind-start').classList.toggle('active', !isMove);
+  document.getElementById('lm-kind-move').classList.toggle('active', isMove);
+  const fd = isMove ? lmDelta(lmState.feet, lmState.prevFeet) : null;
+  const td = isMove ? lmDelta(lmState.target, lmState.prevTarget) : null;
+  document.getElementById('lm-feet-val').innerHTML = `${lmState.feet}<small>${fd ? `${lmDir(fd)} of ${lmState.prevFeet}` : 'board'}</small>`;
+  document.getElementById('lm-target-val').innerHTML = `${lmState.target}<small>${lmArrowHint(lmState.target)}${td ? ` · ${lmDir(td)} of ${lmState.prevTarget}` : ''}</small>`;
+}
+async function openLaneMove(gameId) {
+  await Promise.all(gameStates.filter(g => laneMovesCache[g.gameId] === undefined).map(g => loadLaneMoves(g.gameId)));
+  const gs = gameStates.find(g => g.gameId === gameId);
+  if (!gs) return;
+  const frame = Math.min(Math.max(currentFrame || 1, 1), 10);
+  const prior = lmPriorEntry(gs.gameNum, frame);
+  const any = gameStates.some(g => (laneMovesCache[g.gameId] || []).length);
+  let st = { feet: 22, target: 15 };
+  try { const r = JSON.parse(localStorage.getItem('bt_stance') || 'null'); if (r && r.feet && r.target) st = r; } catch (e) {}
+  lmState = {
+    gameId, gameNum: gs.gameNum, frame, kind: any ? 'move' : 'start',
+    feet: prior?.feet_board ?? st.feet, target: prior?.target_board ?? st.target,
+    prevFeet: prior?.feet_board ?? null, prevTarget: prior?.target_board ?? null
+  };
+  document.getElementById('lm-note-input').value = '';
+  renderLmModal();
+  openModal('modal-lane-move');
+}
+function setLmKind(k) { lmState.kind = k; renderLmModal(); }
+function adjLaneMove(which, d) {
+  if (which === 'frame') lmState.frame = Math.min(10, Math.max(1, lmState.frame + d));
+  else lmState[which] = Math.min(39, Math.max(1, lmState[which] + d));
+  renderLmModal();
+}
+async function saveLaneMove() {
+  const isMove = lmState.kind === 'move';
+  const payload = {
+    game_id: lmState.gameId, frame_number: lmState.frame, kind: lmState.kind,
+    feet_board: lmState.feet, target_board: lmState.target,
+    prev_feet_board: isMove ? lmState.prevFeet : null, prev_target_board: isMove ? lmState.prevTarget : null,
+    note: document.getElementById('lm-note-input').value.trim() || null
+  };
+  const { data, error } = await sb.from('lane_moves').insert(payload).select().single();
+  if (error) {
+    console.error('saveLaneMove', error);
+    showToast(/lane_moves/.test(error.message || '') ? 'Lane moves table not set up yet' : 'Error saving', 'error');
+    return;
+  }
+  try { localStorage.setItem('bt_stance', JSON.stringify({ feet: lmState.feet, target: lmState.target })); } catch (e) {}
+  (laneMovesCache[lmState.gameId] = laneMovesCache[lmState.gameId] || []).push(data);
+  laneMovesCache[lmState.gameId].sort((a, b) => a.frame_number - b.frame_number);
+  laneHistory = null;
+  closeModal('modal-lane-move');
+  showToast(isMove ? 'Move logged' : 'Starting spot saved', 'success');
+  renderActiveGame();
+}
+async function deleteLaneMove(id, gameId) {
+  if (!confirm('Remove this entry?')) return;
+  const { error } = await sb.from('lane_moves').delete().eq('id', id);
+  if (error) { showToast('Error removing entry', 'error'); return; }
+  laneMovesCache[gameId] = (laneMovesCache[gameId] || []).filter(m => m.id !== id);
+  laneHistory = null;
+  renderActiveGame();
+}
+
+function renderLaneBreakdown() {
+  const box = document.getElementById('bt-lane');
+  if (!box) return;
+  if (laneMovesOK === false || laneHistory === null) { box.innerHTML = ''; return; }
+  const rows = laneHistory.filter(r => (btOil === 'all' || r.pattern === btOil) && (btCenter === 'all' || r.center === btCenter));
+  const { N, spots } = laneHotspots(rows);
+  const nMoves = rows.filter(r => r.kind === 'move').length;
+  // usual starting spot = most common feet/target board among 'start' entries
+  const mode = arr => { const c = {}; arr.forEach(v => { if (v != null) c[v] = (c[v] || 0) + 1; }); const e = Object.entries(c).sort((a, b) => b[1] - a[1])[0]; return e ? +e[0] : null; };
+  const starts = rows.filter(r => r.kind === 'start');
+  const sf = mode(starts.map(r => r.feet)), stg = mode(starts.map(r => r.target));
+  const startLine = starts.length ? `<div class="bt-spot">📍 Usual start: <b>feet ${sf}</b>, <b>target ${stg}</b> <span style="color:var(--text2)">(${lmArrowHint(stg)}, ${starts.length} session${starts.length!==1?'s':''})</span></div>` : '';
+  let body;
+  if (!rows.length) body = `<div class="bt-help" style="margin:0">Nothing logged for this filter yet. On the game screen, tap “Set starting spot”, then “Log a move” whenever you change your feet or target.</div>`;
+  else if (N < 3) body = `${startLine}<div class="bt-help" style="margin:0">${nMoves} move${nMoves!==1?'s':''} logged across ${N} session${N!==1?'s':''}. Patterns show up after 3 sessions with moves.</div>`;
+  else if (!spots.length) body = `${startLine}<div class="bt-help" style="margin:0">${nMoves} moves across ${N} sessions, but no consistent spot yet.</div>`;
+  else body = startLine + spots.map(sp => `<div class="bt-spot">Game ${sp.gameNum}, frames <b>${sp.from}–${sp.to}</b> — moved in ${sp.count} of ${sp.N} sessions<br><span style="color:var(--text2)">Usually ${esc(lmSpotText(sp))}</span></div>`).join('');
+  box.innerHTML = `<div class="bt-card"><h4>Oil breakdown & your moves</h4>
+    <div class="bt-help">Board numbers run right to left (higher = further left). During a game you'll get a heads-up when you reach a spot where you usually move.</div>${body}</div>`;
+}
+
+// ============================================================
 // BALL TRACKER  (strike rate by frame position, per ball)
 // ============================================================
 let btOil = 'all';
@@ -3510,6 +3787,7 @@ async function openBallTracker() {
   try {
     await loadBalls();
     btData = await loadBallTrackerData();
+    await loadLaneHistory();
     renderBtCenterPicker();
   } catch (e) {
     console.error('ball tracker load', e);
@@ -3603,6 +3881,7 @@ function btAnalyze(rows) {
 }
 
 function renderBallTracker() {
+  renderLaneBreakdown();
   const box = document.getElementById('bt-content');
   if (!btData || !btData.length) {
     box.innerHTML = `<div class="empty-state"><div class="es-icon">🎯</div><div class="es-text">No ball data yet.<br>Pick the ball you throw while scoring a game and it will show up here.</div></div>`;
@@ -3724,6 +4003,8 @@ async function createSession() {
     id:           sessData.id,
     league_id:    currentLeague ? currentLeague.id : null,
     session_type: newType,
+    pattern:      sessData.pattern || null,
+    center:       sessData.center || null,
     date:         sessData.date,
     games:        gamesData.sort((a,b) => a.game_number - b.game_number)
   };
@@ -3865,19 +4146,20 @@ function renderActiveGame() {
   const metaHTML   = renderGameMeta(gs);
 
   const ballBarHTML = renderGameBallBar(gs);
+  const mvHTML = renderLaneMoveBar(gs, done);
   if (done) {
     // Load shot log for this game if not cached, then render
     if (shotLogCache[gs.gameId] === undefined) {
-      area.innerHTML = ballBarHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + '<div style="padding:16px;text-align:center;"><div class="spinner"></div></div>';
+      area.innerHTML = ballBarHTML + mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + '<div style="padding:16px;text-align:center;"><div class="spinner"></div></div>';
       loadShotLog(gs.gameId).then(() => {
-        area.innerHTML = ballBarHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
+        area.innerHTML = ballBarHTML + mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
       });
     } else {
-      area.innerHTML = ballBarHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
+      area.innerHTML = ballBarHTML + mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
     }
   } else {
     const pinHTML    = renderPinArea(gs);
-    area.innerHTML   = ballBarHTML + scoreHTML + metaHTML + pinHTML;
+    area.innerHTML   = ballBarHTML + mvHTML + scoreHTML + metaHTML + pinHTML;
   }
 }
 
