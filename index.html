@@ -274,6 +274,12 @@ label { display: block; font-size: .8rem; color: var(--text2); margin-bottom: 4p
 .lm-hint b { color: var(--neon2); }
 .lm-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .lm-btn { padding: 9px 14px; border-radius: 18px; border: 1px solid var(--neon3); background: transparent; color: var(--neon3); font-weight: 700; font-size: .82rem; font-family: inherit; cursor: pointer; }
+.game-tools { position: sticky; top: var(--game-sticky, 0px); z-index: 9; background: var(--bg); box-shadow: 0 4px 10px rgba(0,0,0,.35); }
+.game-tools .lm-bar { margin: 0; padding: 8px 14px; border-bottom: 1px solid var(--border); }
+.game-tools .lm-row { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.game-tools .lm-chip, .game-tools .lm-btn { flex-shrink: 0; white-space: nowrap; }
+.game-ball-bar { cursor: pointer; }
+.game-ball-bar .gbb-switch { padding: 8px 14px; font-weight: 700; border-color: var(--neon); }
 .lm-btn:active { background: var(--neon3); color: #0a0a0f; }
 .lm-chip { padding: 6px 10px; border-radius: 14px; background: var(--bg3); border: 1px solid var(--border); font-size: .74rem; color: var(--text2); cursor: pointer; }
 .lm-chip.start { border-color: var(--neon3); color: var(--text); }
@@ -2503,6 +2509,7 @@ let selectedPins  = new Set(); // pins selected on current roll click
 
 // Arsenal & ball tracking
 let myBalls = [];
+let ballsLoaded = false;
 let gameBallLog = {};   // { gameId: [{id,ball_id,from_frame,balls:{name,color_hex}}] }
 let prevHighGame = null; // for personal best detection
 let leagueAvgs = {};
@@ -3676,10 +3683,10 @@ function laneHint(gs, done) {
 }
 
 function renderLaneMoveBar(gs, done) {
-  if (laneMovesOK === false) return '';
+  if (laneMovesOK === false) return { hint: '', row: '' };
   if (laneMovesCache[gs.gameId] === undefined) {
     loadLaneMoves(gs.gameId).then(() => { if (gameStates[activeGameIndex] === gs) renderActiveGame(); });
-    return '';
+    return { hint: '', row: '' };
   }
   if (laneHistory === null && !laneHistoryLoading) {
     loadLaneHistory().then(() => { if (gameStates[activeGameIndex] === gs) renderActiveGame(); });
@@ -3688,7 +3695,8 @@ function renderLaneMoveBar(gs, done) {
   const chips = laneMovesCache[gs.gameId].map(m =>
     `<span class="lm-chip ${m.kind === 'start' ? 'start' : ''}" onclick="deleteLaneMove('${m.id}','${gs.gameId}')" title="Tap to remove">${esc(lmChipText(m))} ✕</span>`).join('');
   const label = anyLogged ? '↔ Log a move' : '📍 Set starting spot';
-  return `<div class="lm-bar">${laneHint(gs, done)}<div class="lm-row"><button class="lm-btn" onclick="openLaneMove('${gs.gameId}')">${label}</button>${chips}</div></div>`;
+  return { hint: laneHint(gs, done) ? `<div class="lm-bar">${laneHint(gs, done)}</div>` : '',
+           row: `<div class="lm-bar lm-sticky"><div class="lm-row"><button class="lm-btn" onclick="openLaneMove('${gs.gameId}')">${label}</button>${chips}</div></div>` };
 }
 
 // most recent entry at/before (gameNum, frame) in this session
@@ -4089,6 +4097,10 @@ async function createSession() {
   showScreen('game');
   renderGameScreen();
   maybeShowLeagueReminder();
+  // Fresh session: ask which ball you're starting with
+  if (myBalls.length && gameStates[0] && !(gameBallLog[gameStates[0].gameId] || []).length) {
+    setTimeout(() => { if (!document.getElementById('modal-league-reminder')?.classList.contains('open')) openSwitchBallModal(); }, 400);
+  }
 }
 
 function initFrames() {
@@ -4212,20 +4224,24 @@ function renderActiveGame() {
   const metaHTML   = renderGameMeta(gs);
 
   const ballBarHTML = renderGameBallBar(gs);
-  const mvHTML = renderLaneMoveBar(gs, done);
+  const mv = renderLaneMoveBar(gs, done);
+  // Ball + lane-move controls stay pinned under the header while scrolling
+  const hdr = document.querySelector('#screen-game .page-header');
+  document.documentElement.style.setProperty('--game-sticky', (hdr ? hdr.offsetHeight : 0) + 'px');
+  const mvHTML = `<div class="game-tools">${ballBarHTML}${mv.row}</div>${mv.hint}`;
   if (done) {
     // Load shot log for this game if not cached, then render
     if (shotLogCache[gs.gameId] === undefined) {
-      area.innerHTML = ballBarHTML + mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + '<div style="padding:16px;text-align:center;"><div class="spinner"></div></div>';
+      area.innerHTML = mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + '<div style="padding:16px;text-align:center;"><div class="spinner"></div></div>';
       loadShotLog(gs.gameId).then(() => {
-        area.innerHTML = ballBarHTML + mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
+        area.innerHTML = mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
       });
     } else {
-      area.innerHTML = ballBarHTML + mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
+      area.innerHTML = mvHTML + scoreHTML + metaHTML + renderBallUsageTimeline(gs) + renderGameComplete(gs) + renderShotLogSection(gs);
     }
   } else {
     const pinHTML    = renderPinArea(gs);
-    area.innerHTML   = ballBarHTML + mvHTML + scoreHTML + metaHTML + pinHTML;
+    area.innerHTML   = mvHTML + scoreHTML + metaHTML + pinHTML;
   }
 }
 
@@ -6581,6 +6597,7 @@ async function loadBalls() {
   if (!currentUser) return;
   const { data } = await sb.from('balls').select('*').eq('user_id', currentUser.id).order('created_at');
   myBalls = data || [];
+  ballsLoaded = true;
 }
 
 async function openArsenalScreen() {
@@ -6698,14 +6715,24 @@ function getCurrentBallEntry(gameId, frameNum) {
 }
 
 function renderGameBallBar(gs) {
-  if (!myBalls.length) return '';
+  if (!ballsLoaded) {
+    loadBalls().then(() => { if (gameStates[activeGameIndex] === gs) renderActiveGame(); });
+    return '';
+  }
+  if (!myBalls.length) {
+    return `<div class="game-ball-bar">
+      <div class="gbb-orb" style="background:var(--bg3)"></div>
+      <span class="gbb-name">No balls in your Arsenal yet</span>
+      <button class="gbb-switch" onclick="openArsenalScreen()">Add Ball</button>
+    </div>`;
+  }
   const entry = getCurrentBallEntry(gs.gameId, currentFrame);
-  const name  = entry?.balls?.name || 'No ball selected';
+  const name  = entry?.balls?.name || 'Pick your ball';
   const color = entry?.balls?.color_hex || 'var(--bg3)';
-  return `<div class="game-ball-bar">
+  return `<div class="game-ball-bar" onclick="openSwitchBallModal()">
     <div class="gbb-orb" style="background:${color}"></div>
     <span class="gbb-name">${esc(name)}</span>
-    <button class="gbb-switch" onclick="openSwitchBallModal()">Switch Ball</button>
+    <button class="gbb-switch" onclick="event.stopPropagation();openSwitchBallModal()">${entry ? 'Switch Ball' : 'Select Ball'}</button>
   </div>`;
 }
 
